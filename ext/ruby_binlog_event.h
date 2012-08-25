@@ -137,6 +137,17 @@ struct IncidentEvent : public Event {
   static VALUE get_message(VALUE self);
 };
 
+struct XidEvent : public Event {
+  mysql::Xid *m_event;
+
+  static void free(XidEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
+
+  static VALUE get_xid_id(VALUE self);
+};
+
 struct UnimplementedEvent : public Event {
   mysql::Binary_log_event *m_event;
 

@@ -8,6 +8,7 @@ extern VALUE rb_cBinlogTableMapEvent;
 extern VALUE rb_cBinlogRowEvent;
 extern VALUE rb_cBinlogIntVarEvent;
 extern VALUE rb_cBinlogIncidentEvent;
+extern VALUE rb_cBinlogXid;
 extern VALUE rb_cBinlogUnimplementedEvent;
 
 namespace ruby {
@@ -112,6 +113,11 @@ struct Client {
     case INCIDENT_EVENT:
       retval = rb_funcall(rb_cBinlogIncidentEvent, rb_intern("new"), 0);
       IncidentEvent::set_event(retval, event);
+      break;
+
+    case XID_EVENT:
+      retval = rb_funcall(rb_cBinlogXid, rb_intern("new"), 0);
+      XidEvent::set_event(retval, event);
       break;
 
     default:
@@ -265,5 +271,6 @@ void Init_binlog() {
   ruby::binlog::RowEvent::init();
   ruby::binlog::IntVarEvent::init();
   ruby::binlog::IncidentEvent::init();
+  ruby::binlog::XidEvent::init();
   ruby::binlog::UnimplementedEvent::init();
 }
