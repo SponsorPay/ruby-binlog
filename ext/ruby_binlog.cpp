@@ -9,6 +9,7 @@ struct Client {
   static void free(Client *p) {
     if (p->m_binlog) {
       delete p->m_binlog;
+      p->m_binlog = 0;
     }
 
     delete p;
@@ -104,7 +105,7 @@ struct Client {
 
   static VALUE get_position(int argc, VALUE *argv, VALUE self) {
     Client *p;
-    VALUE filename, retval = Qnil;
+    VALUE filename;
     unsigned long position;
 
     Data_Get_Struct(self, Client, p);

@@ -8,6 +8,7 @@ namespace binlog {
 void QueryEvent::free(QueryEvent *p) {
   if (p->m_event) {
     delete p->m_event;
+    p->m_event = 0;
   }
 
   delete p;
