@@ -79,12 +79,12 @@ struct Client {
 
     if (NIL_P(position)) {
       unsigned long i_position;
-      i_position = NUM2LONG(filename);
+      i_position = NUM2ULONG(filename);
       result = p->m_binlog->set_position(i_position);
     } else {
       unsigned long i_position;
       Check_Type(filename, T_STRING);
-      i_position = NUM2LONG(position);
+      i_position = NUM2ULONG(position);
       std::string s_filename(StringValuePtr(filename));
       result = p->m_binlog->set_position(s_filename, i_position);
     }
@@ -119,7 +119,7 @@ struct Client {
       position = p->m_binlog->get_position(s_filename);
     }
 
-    return LONG2NUM(position);
+    return ULONG2NUM(position);
   }
 
   static void init() {
@@ -142,6 +142,35 @@ VALUE rb_cBinlogEvent;
 void Init_binlog() {
   rb_mBinlog = rb_define_module("Binlog");
   rb_cBinlogEvent = rb_define_class_under(rb_mBinlog, "Event", rb_cObject);
+
+  rb_define_const(rb_cBinlogEvent, "UNKNOWN_EVENT",            INT2NUM(0));
+  rb_define_const(rb_cBinlogEvent, "START_EVENT_V3",           INT2NUM(1));
+  rb_define_const(rb_cBinlogEvent, "QUERY_EVENT",              INT2NUM(2));
+  rb_define_const(rb_cBinlogEvent, "STOP_EVEN",                INT2NUM(3));
+  rb_define_const(rb_cBinlogEvent, "ROTATE_EVEN",              INT2NUM(4));
+  rb_define_const(rb_cBinlogEvent, "INTVAR_EVEN",              INT2NUM(5));
+  rb_define_const(rb_cBinlogEvent, "LOAD_EVEN",                INT2NUM(6));
+  rb_define_const(rb_cBinlogEvent, "SLAVE_EVEN",               INT2NUM(7));
+  rb_define_const(rb_cBinlogEvent, "CREATE_FILE_EVEN",         INT2NUM(8));
+  rb_define_const(rb_cBinlogEvent, "APPEND_BLOCK_EVEN",        INT2NUM(9));
+  rb_define_const(rb_cBinlogEvent, "EXEC_LOAD_EVEN",           INT2NUM(10));
+  rb_define_const(rb_cBinlogEvent, "DELETE_FILE_EVEN",         INT2NUM(11));
+  rb_define_const(rb_cBinlogEvent, "NEW_LOAD_EVEN",            INT2NUM(12));
+  rb_define_const(rb_cBinlogEvent, "RAND_EVEN",                INT2NUM(13));
+  rb_define_const(rb_cBinlogEvent, "USER_VAR_EVEN",            INT2NUM(14));
+  rb_define_const(rb_cBinlogEvent, "FORMAT_DESCRIPTION_EVEN",  INT2NUM(15));
+  rb_define_const(rb_cBinlogEvent, "XID_EVEN",                 INT2NUM(16));
+  rb_define_const(rb_cBinlogEvent, "BEGIN_LOAD_QUERY_EVEN",    INT2NUM(17));
+  rb_define_const(rb_cBinlogEvent, "EXECUTE_LOAD_QUERY_EVEN",  INT2NUM(18));
+  rb_define_const(rb_cBinlogEvent, "TABLE_MAP_EVENT",          INT2NUM(19));
+  rb_define_const(rb_cBinlogEvent, "PRE_GA_WRITE_ROWS_EVENT",  INT2NUM(20));
+  rb_define_const(rb_cBinlogEvent, "PRE_GA_UPDATE_ROWS_EVENT", INT2NUM(21));
+  rb_define_const(rb_cBinlogEvent, "PRE_GA_DELETE_ROWS_EVENT", INT2NUM(22));
+  rb_define_const(rb_cBinlogEvent, "WRITE_ROWS_EVENT",         INT2NUM(23));
+  rb_define_const(rb_cBinlogEvent, "UPDATE_ROWS_EVENT",        INT2NUM(24));
+  rb_define_const(rb_cBinlogEvent, "DELETE_ROWS_EVENT",        INT2NUM(25));
+  rb_define_const(rb_cBinlogEvent, "INCIDENT_EVEN",            INT2NUM(26));
+  rb_define_const(rb_cBinlogEvent, "USER_DEFINED",             INT2NUM(27));
 
   ruby::binlog::Client::init();
   ruby::binlog::QueryEvent::init();
