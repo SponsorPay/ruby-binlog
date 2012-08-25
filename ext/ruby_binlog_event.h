@@ -50,6 +50,20 @@ struct RotateEvent : public Event {
   static VALUE get_binlog_pos(VALUE self);
 };
 
+struct FormatEvent : public Event {
+  mysql::Format_event *m_event;
+
+  static void free(FormatEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
+
+  static VALUE get_binlog_version(VALUE self);
+  static VALUE get_master_version(VALUE self);
+  static VALUE get_created_ts(VALUE self);
+  static VALUE get_log_header_len(VALUE self);
+};
+
 struct UnimplementedEvent : public Event {
   mysql::Binary_log_event *m_event;
 
