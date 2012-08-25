@@ -6,6 +6,7 @@ extern VALUE rb_cBinlogFormatEvent;
 extern VALUE rb_cBinlogUserVarEvent;
 extern VALUE rb_cBinlogTableMapEvent;
 extern VALUE rb_cBinlogRowEvent;
+extern VALUE rb_cBinlogIntVarEvent;
 extern VALUE rb_cBinlogUnimplementedEvent;
 
 namespace ruby {
@@ -70,18 +71,22 @@ struct Client {
       retval = rb_funcall(rb_cBinlogQueryEvent, rb_intern("new"), 0);
       QueryEvent::set_event(retval, event);
       break;
+
     case ROTATE_EVENT:
       retval = rb_funcall(rb_cBinlogRotateEvent, rb_intern("new"), 0);
       RotateEvent::set_event(retval, event);
       break;
+
     case FORMAT_DESCRIPTION_EVENT: // XXX: Is it right?
       retval = rb_funcall(rb_cBinlogFormatEvent, rb_intern("new"), 0);
       FormatEvent::set_event(retval, event);
       break;
+
     case USER_VAR_EVENT:
       retval = rb_funcall(rb_cBinlogUserVarEvent, rb_intern("new"), 0);
       UserVarEvent::set_event(retval, event);
       break;
+
     case TABLE_MAP_EVENT:
       retval = rb_funcall(rb_cBinlogTableMapEvent, rb_intern("new"), 0);
       TableMapEvent::set_event(retval, event);
@@ -96,6 +101,11 @@ struct Client {
     case DELETE_ROWS_EVENT:
       retval = rb_funcall(rb_cBinlogRowEvent, rb_intern("new"), 0);
       RowEvent::set_event(retval, event);
+      break;
+
+    case INTVAR_EVENT:
+      retval = rb_funcall(rb_cBinlogIntVarEvent, rb_intern("new"), 0);
+      IntVarEvent::set_event(retval, event);
       break;
 
     default:
@@ -247,5 +257,6 @@ void Init_binlog() {
   ruby::binlog::UserVarEvent::init();
   ruby::binlog::TableMapEvent::init();
   ruby::binlog::RowEvent::init();
+  ruby::binlog::IntVarEvent::init();
   ruby::binlog::UnimplementedEvent::init();
 }
