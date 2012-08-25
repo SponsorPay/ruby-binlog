@@ -38,6 +38,18 @@ struct QueryEvent : public Event {
   static VALUE get_query(VALUE self);
 };
 
+struct RotateEvent : public Event {
+  mysql::Rotate_event *m_event;
+
+  static void free(RotateEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
+
+  static VALUE get_binlog_file(VALUE self);
+  static VALUE get_binlog_pos(VALUE self);
+};
+
 struct UnimplementedEvent : public Event {
   mysql::Binary_log_event *m_event;
 

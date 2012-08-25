@@ -1,6 +1,7 @@
 #include "ruby_binlog.h"
 
 extern VALUE rb_cBinlogQueryEvent;
+extern VALUE rb_cBinlogRotateEvent;
 extern VALUE rb_cBinlogUnimplementedEvent;
 
 namespace ruby {
@@ -64,6 +65,10 @@ struct Client {
     case QUERY_EVENT:
       retval = rb_funcall(rb_cBinlogQueryEvent, rb_intern("new"), 0);
       QueryEvent::set_event(retval, event);
+      break;
+    case ROTATE_EVENT:
+      retval = rb_funcall(rb_cBinlogRotateEvent, rb_intern("new"), 0);
+      RotateEvent::set_event(retval, event);
       break;
     default:
       retval = rb_funcall(rb_cBinlogUnimplementedEvent, rb_intern("new"), 0);
@@ -209,5 +214,6 @@ void Init_binlog() {
 
   ruby::binlog::Client::init();
   ruby::binlog::QueryEvent::init();
+  ruby::binlog::RotateEvent::init();
   ruby::binlog::UnimplementedEvent::init();
 }
