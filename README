@@ -1,0 +1,29 @@
+= ruby-binlog
+
+== Description
+
+ruby-binlog is Ruby binding for MySQL Binary log API.
+
+see http://www.oscon.com/oscon2011/public/schedule/detail/18785
+
+== Install
+
+gem install ruby-binlog
+
+== Example
+
+    require "binlog"
+    
+    client = Binlog::Client.new("mysql://repl:repl@nyarlathotep")
+    client.connect
+    client.position = 4
+    
+    while event = client.wait_for_next_event
+      case event
+      when Binlog::QueryEvent
+        puts event.query
+      else
+        puts "(#{event.event_type})"
+      end
+    end
+
