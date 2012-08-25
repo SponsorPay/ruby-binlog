@@ -64,6 +64,21 @@ struct FormatEvent : public Event {
   static VALUE get_log_header_len(VALUE self);
 };
 
+struct UserVarEvent : public Event {
+  mysql::User_var_event *m_event;
+
+  static void free(UserVarEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
+
+  static VALUE get_name(VALUE self);
+  static VALUE get_is_null(VALUE self);
+  static VALUE get_type(VALUE self);
+  static VALUE get_charset(VALUE self);
+  static VALUE get_value(VALUE self);
+};
+
 struct UnimplementedEvent : public Event {
   mysql::Binary_log_event *m_event;
 

@@ -3,6 +3,7 @@
 extern VALUE rb_cBinlogQueryEvent;
 extern VALUE rb_cBinlogRotateEvent;
 extern VALUE rb_cBinlogFormatEvent;
+extern VALUE rb_cBinlogUserVarEvent;
 extern VALUE rb_cBinlogUnimplementedEvent;
 
 namespace ruby {
@@ -71,9 +72,13 @@ struct Client {
       retval = rb_funcall(rb_cBinlogRotateEvent, rb_intern("new"), 0);
       RotateEvent::set_event(retval, event);
       break;
-    case FORMAT_DESCRIPTION_EVENT:
+    case FORMAT_DESCRIPTION_EVENT: // XXX: Is it right? 
       retval = rb_funcall(rb_cBinlogFormatEvent, rb_intern("new"), 0);
       FormatEvent::set_event(retval, event);
+      break;
+    case USER_VAR_EVENT:
+      retval = rb_funcall(rb_cBinlogUserVarEvent, rb_intern("new"), 0);
+      UserVarEvent::set_event(retval, event);
       break;
     default:
       retval = rb_funcall(rb_cBinlogUnimplementedEvent, rb_intern("new"), 0);
@@ -191,22 +196,22 @@ void Init_binlog() {
   rb_define_const(rb_cBinlogEvent, "UNKNOWN_EVENT",            INT2NUM(0));
   rb_define_const(rb_cBinlogEvent, "START_EVENT_V3",           INT2NUM(1));
   rb_define_const(rb_cBinlogEvent, "QUERY_EVENT",              INT2NUM(2));
-  rb_define_const(rb_cBinlogEvent, "STOP_EVEN",                INT2NUM(3));
-  rb_define_const(rb_cBinlogEvent, "ROTATE_EVEN",              INT2NUM(4));
-  rb_define_const(rb_cBinlogEvent, "INTVAR_EVEN",              INT2NUM(5));
-  rb_define_const(rb_cBinlogEvent, "LOAD_EVEN",                INT2NUM(6));
-  rb_define_const(rb_cBinlogEvent, "SLAVE_EVEN",               INT2NUM(7));
-  rb_define_const(rb_cBinlogEvent, "CREATE_FILE_EVEN",         INT2NUM(8));
-  rb_define_const(rb_cBinlogEvent, "APPEND_BLOCK_EVEN",        INT2NUM(9));
-  rb_define_const(rb_cBinlogEvent, "EXEC_LOAD_EVEN",           INT2NUM(10));
-  rb_define_const(rb_cBinlogEvent, "DELETE_FILE_EVEN",         INT2NUM(11));
-  rb_define_const(rb_cBinlogEvent, "NEW_LOAD_EVEN",            INT2NUM(12));
-  rb_define_const(rb_cBinlogEvent, "RAND_EVEN",                INT2NUM(13));
-  rb_define_const(rb_cBinlogEvent, "USER_VAR_EVEN",            INT2NUM(14));
-  rb_define_const(rb_cBinlogEvent, "FORMAT_DESCRIPTION_EVEN",  INT2NUM(15));
-  rb_define_const(rb_cBinlogEvent, "XID_EVEN",                 INT2NUM(16));
-  rb_define_const(rb_cBinlogEvent, "BEGIN_LOAD_QUERY_EVEN",    INT2NUM(17));
-  rb_define_const(rb_cBinlogEvent, "EXECUTE_LOAD_QUERY_EVEN",  INT2NUM(18));
+  rb_define_const(rb_cBinlogEvent, "STOP_EVENT",               INT2NUM(3));
+  rb_define_const(rb_cBinlogEvent, "ROTATE_EVENT",             INT2NUM(4));
+  rb_define_const(rb_cBinlogEvent, "INTVAR_EVENT",             INT2NUM(5));
+  rb_define_const(rb_cBinlogEvent, "LOAD_EVENT",               INT2NUM(6));
+  rb_define_const(rb_cBinlogEvent, "SLAVE_EVENT",              INT2NUM(7));
+  rb_define_const(rb_cBinlogEvent, "CREATE_FILE_EVENT",        INT2NUM(8));
+  rb_define_const(rb_cBinlogEvent, "APPEND_BLOCK_EVENT",       INT2NUM(9));
+  rb_define_const(rb_cBinlogEvent, "EXEC_LOAD_EVENT",          INT2NUM(10));
+  rb_define_const(rb_cBinlogEvent, "DELETE_FILE_EVENT",        INT2NUM(11));
+  rb_define_const(rb_cBinlogEvent, "NEW_LOAD_EVENT",           INT2NUM(12));
+  rb_define_const(rb_cBinlogEvent, "RAND_EVENT",               INT2NUM(13));
+  rb_define_const(rb_cBinlogEvent, "USER_VAR_EVENT",           INT2NUM(14));
+  rb_define_const(rb_cBinlogEvent, "FORMAT_DESCRIPTION_EVENT", INT2NUM(15));
+  rb_define_const(rb_cBinlogEvent, "XID_EVENT",                INT2NUM(16));
+  rb_define_const(rb_cBinlogEvent, "BEGIN_LOAD_QUERY_EVENT",   INT2NUM(17));
+  rb_define_const(rb_cBinlogEvent, "EXECUTE_LOAD_QUERY_EVENT", INT2NUM(18));
   rb_define_const(rb_cBinlogEvent, "TABLE_MAP_EVENT",          INT2NUM(19));
   rb_define_const(rb_cBinlogEvent, "PRE_GA_WRITE_ROWS_EVENT",  INT2NUM(20));
   rb_define_const(rb_cBinlogEvent, "PRE_GA_UPDATE_ROWS_EVENT", INT2NUM(21));
@@ -214,12 +219,13 @@ void Init_binlog() {
   rb_define_const(rb_cBinlogEvent, "WRITE_ROWS_EVENT",         INT2NUM(23));
   rb_define_const(rb_cBinlogEvent, "UPDATE_ROWS_EVENT",        INT2NUM(24));
   rb_define_const(rb_cBinlogEvent, "DELETE_ROWS_EVENT",        INT2NUM(25));
-  rb_define_const(rb_cBinlogEvent, "INCIDENT_EVEN",            INT2NUM(26));
+  rb_define_const(rb_cBinlogEvent, "INCIDENT_EVENT",           INT2NUM(26));
   rb_define_const(rb_cBinlogEvent, "USER_DEFINED",             INT2NUM(27));
 
   ruby::binlog::Client::init();
   ruby::binlog::QueryEvent::init();
   ruby::binlog::RotateEvent::init();
   ruby::binlog::FormatEvent::init();
+  ruby::binlog::UserVarEvent::init();
   ruby::binlog::UnimplementedEvent::init();
 }
