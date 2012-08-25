@@ -3,6 +3,8 @@
 
 #include "ruby_binlog.h"
 
+extern VALUE rb_cBinlogEvent;
+
 namespace ruby {
 namespace binlog {
 
@@ -28,6 +30,15 @@ struct QueryEvent : public Event {
   static void set_event(VALUE self, mysql::Binary_log_event *event);
   static void init();
   static VALUE query(VALUE self);
+};
+
+struct UnimplementedEvent : public Event {
+  mysql::Binary_log_event *m_event;
+
+  static void free(QueryEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
 };
 
 } // namespace binlog

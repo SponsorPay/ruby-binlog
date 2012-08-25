@@ -22,8 +22,6 @@
 #endif
 
 extern VALUE rb_mBinlog;
-extern VALUE rb_cBinlogEvent;
-extern VALUE rb_cBinlogQueryEvent;
 
 extern "C" {
 #ifdef _WIN32

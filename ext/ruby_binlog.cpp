@@ -1,5 +1,8 @@
 #include "ruby_binlog.h"
 
+extern VALUE rb_cBinlogQueryEvent;
+extern VALUE rb_cBinlogUnimplementedEvent;
+
 namespace ruby {
 namespace binlog {
 
@@ -62,7 +65,9 @@ struct Client {
       retval = rb_funcall(rb_cBinlogQueryEvent, rb_intern("new"), 0);
       QueryEvent::set_event(retval, event);
       break;
-    default: // XXX:
+    default:
+      retval = rb_funcall(rb_cBinlogUnimplementedEvent, rb_intern("new"), 0);
+      UnimplementedEvent::set_event(retval, event);
       break;
     }
 
@@ -103,6 +108,28 @@ struct Client {
     return retval;
   }
 
+  static VALUE set_position2(VALUE self, VALUE position) {
+    Client *p;
+    VALUE retval = Qnil;
+    int result;
+
+    Data_Get_Struct(self, Client, p);
+    result = p->m_binlog->set_position(NUM2ULONG(position));
+
+    switch (result) {
+    case ERR_OK:
+      retval = Qtrue;
+      break;
+    case ERR_EOF:
+      retval = Qfalse;
+    default:
+      rb_raise(rb_eRuntimeError, "An unspecified error occurred (%d)", result);
+      break;
+    }
+
+    return retval;
+  }
+
   static VALUE get_position(int argc, VALUE *argv, VALUE self) {
     Client *p;
     VALUE filename;
@@ -122,6 +149,12 @@ struct Client {
     return ULONG2NUM(position);
   }
 
+  static VALUE get_position2(VALUE self) {
+    Client *p;
+    Data_Get_Struct(self, Client, p);
+    return ULONG2NUM(p->m_binlog->get_position());
+  }
+
   static void init() {
     VALUE rb_cBinlogClient = rb_define_class_under(rb_mBinlog, "Client", rb_cObject);
     rb_define_alloc_func(rb_cBinlogClient, &alloc);
@@ -129,7 +162,9 @@ struct Client {
     rb_define_method(rb_cBinlogClient, "connect", __F(&connect), 0);
     rb_define_method(rb_cBinlogClient, "wait_for_next_event", __F(&wait_for_next_event), 0);
     rb_define_method(rb_cBinlogClient, "set_position", __F(&set_position), -1);
+    rb_define_method(rb_cBinlogClient, "position=", __F(&set_position2), 1);
     rb_define_method(rb_cBinlogClient, "get_position", __F(&get_position), -1);
+    rb_define_method(rb_cBinlogClient, "position", __F(&get_position2), 0);
   }
 };
 
@@ -174,4 +209,5 @@ void Init_binlog() {
 
   ruby::binlog::Client::init();
   ruby::binlog::QueryEvent::init();
+  ruby::binlog::UnimplementedEvent::init();
 }
