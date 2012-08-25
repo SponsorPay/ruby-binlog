@@ -79,6 +79,23 @@ struct UserVarEvent : public Event {
   static VALUE get_value(VALUE self);
 };
 
+struct TableMapEvent : public Event {
+  mysql::Table_map_event *m_event;
+
+  static void free(TableMapEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
+
+  static VALUE get_table_id(VALUE self);
+  static VALUE get_flags(VALUE self);
+  static VALUE get_db_name(VALUE self);
+  static VALUE get_table_name(VALUE self);
+  static VALUE get_columns(VALUE self);
+  static VALUE get_metadata(VALUE self);
+  static VALUE get_null_bits(VALUE self);
+};
+
 struct UnimplementedEvent : public Event {
   mysql::Binary_log_event *m_event;
 
