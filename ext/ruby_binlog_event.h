@@ -125,6 +125,18 @@ struct IntVarEvent : public Event {
   static VALUE get_value(VALUE self);
 };
 
+struct IncidentEvent : public Event {
+  mysql::Incident_event *m_event;
+
+  static void free(IncidentEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
+
+  static VALUE get_type(VALUE self);
+  static VALUE get_message(VALUE self);
+};
+
 struct UnimplementedEvent : public Event {
   mysql::Binary_log_event *m_event;
 
