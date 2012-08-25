@@ -96,6 +96,23 @@ struct TableMapEvent : public Event {
   static VALUE get_null_bits(VALUE self);
 };
 
+struct RowEvent : public Event {
+  mysql::Row_event *m_event;
+
+  static void free(RowEvent *p);
+  static VALUE alloc(VALUE klass);
+  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void init();
+
+  static VALUE get_table_id(VALUE self);
+  static VALUE get_flags(VALUE self);
+  static VALUE get_columns_len(VALUE self);
+  static VALUE get_null_bits_len(VALUE self);
+  static VALUE get_columns_before_image(VALUE self);
+  static VALUE get_used_columns(VALUE self);
+  static VALUE get_row(VALUE self);
+};
+
 struct UnimplementedEvent : public Event {
   mysql::Binary_log_event *m_event;
 
