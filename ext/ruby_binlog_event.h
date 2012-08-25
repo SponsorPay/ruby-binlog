@@ -29,7 +29,13 @@ struct QueryEvent : public Event {
   static VALUE alloc(VALUE klass);
   static void set_event(VALUE self, mysql::Binary_log_event *event);
   static void init();
-  static VALUE query(VALUE self);
+
+  static VALUE get_thread_id(VALUE self);
+  static VALUE get_exec_time(VALUE self);
+  static VALUE get_error_code(VALUE self);
+  static VALUE get_variables(VALUE self);
+  static VALUE get_db_name(VALUE self);
+  static VALUE get_query(VALUE self);
 };
 
 struct UnimplementedEvent : public Event {

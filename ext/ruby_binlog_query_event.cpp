@@ -39,10 +39,53 @@ void QueryEvent::init() {
 
   Event::init(rb_cBinlogQueryEvent);
 
-  rb_define_method(rb_cBinlogQueryEvent, "query", __F(&query), 0);
+  rb_define_method(rb_cBinlogQueryEvent, "thread_id",  __F(&get_thread_id),  0);
+  rb_define_method(rb_cBinlogQueryEvent, "exec_time",  __F(&get_exec_time),  0);
+  rb_define_method(rb_cBinlogQueryEvent, "error_code", __F(&get_error_code), 0);
+  rb_define_method(rb_cBinlogQueryEvent, "variables", __F(&get_variables), 0);
+  rb_define_method(rb_cBinlogQueryEvent, "db_name",    __F(&get_db_name),    0);
+  rb_define_method(rb_cBinlogQueryEvent, "query",      __F(&get_query),      0);
 }
 
-VALUE QueryEvent::query(VALUE self) {
+VALUE QueryEvent::get_thread_id(VALUE self) {
+  QueryEvent *p;
+  Data_Get_Struct(self, QueryEvent, p);
+  return ULONG2NUM(p->m_event->thread_id);
+}
+
+VALUE QueryEvent::get_exec_time(VALUE self) {
+  QueryEvent *p;
+  Data_Get_Struct(self, QueryEvent, p);
+  return ULONG2NUM(p->m_event->exec_time);
+}
+
+VALUE QueryEvent::get_error_code(VALUE self) {
+  QueryEvent *p;
+  Data_Get_Struct(self, QueryEvent, p);
+  return ULONG2NUM(p->m_event->error_code);
+}
+
+VALUE QueryEvent::get_variables(VALUE self) {
+  QueryEvent *p;
+  VALUE retval = rb_ary_new();
+
+  Data_Get_Struct(self, QueryEvent, p);
+
+  for (std::vector<uint8_t>::iterator itor = p->m_event->variables.begin();
+       itor != p->m_event->variables.end(); itor++) {
+    rb_ary_push(retval, UINT2NUM(*itor));
+  }
+
+  return retval;
+}
+
+VALUE QueryEvent::get_db_name(VALUE self) {
+  QueryEvent *p;
+  Data_Get_Struct(self, QueryEvent, p);
+  return rb_str_new2(p->m_event->db_name.c_str());
+}
+
+VALUE QueryEvent::get_query(VALUE self) {
   QueryEvent *p;
   Data_Get_Struct(self, QueryEvent, p);
   return rb_str_new2(p->m_event->query.c_str());
