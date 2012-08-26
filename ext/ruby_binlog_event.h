@@ -115,6 +115,10 @@ struct RowEvent : public Event {
   static VALUE get_columns_before_image(VALUE self);
   static VALUE get_used_columns(VALUE self);
   static VALUE get_row(VALUE self);
+  static VALUE get_rows(VALUE self);
+
+private:
+  static void proc_insert(mysql::Row_of_fields &fields, VALUE rb_row);
 };
 
 struct IntVarEvent : public Event {
