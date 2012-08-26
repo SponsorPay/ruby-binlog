@@ -9,8 +9,9 @@ void TableMapEvent::free(TableMapEvent *p) {
   if (p->m_event) {
     delete p->m_event;
     p->m_event = 0;
-    p->m_event_header = 0;
   }
+
+  p->m_event_header = 0;
 
   delete p;
 }

@@ -9,9 +9,10 @@ void RowEvent::free(RowEvent *p) {
   if (p->m_event) {
     delete p->m_event;
     p->m_event = 0;
-    p->m_table_map = 0;
-    p->m_event_header = 0;
   }
+
+  p->m_event_header = 0;
+  p->m_table_map = 0;
 
   delete p;
 }
@@ -204,17 +205,6 @@ VALUE RowEvent::get_rows(VALUE self) {
     } else if (event_type == mysql::DELETE_ROWS_EVENT) {
       rb_row = proc_delete(fields);
     }
-
-    /*
-          if (event->get_event_type() == mysql::UPDATE_ROWS_EVENT)
-          {
-            ++it;
-            mysql::Row_of_fields fields2= *it;
-            table_update(os.str(),fields,fields2);
-          }
-          if (event->get_event_type() == mysql::DELETE_ROWS_EVENT)
-            table_delete(os.str(),fields);
-      */
 
     rb_ary_push(retval, rb_row);
   } while (++itor != rows.end());

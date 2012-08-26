@@ -22,8 +22,9 @@ struct Client {
     if (p->m_binlog) {
       delete p->m_binlog;
       p->m_binlog = 0;
-      p->m_table_map = 0;
     }
+
+    p->m_table_map = 0;
 
     delete p;
   }
