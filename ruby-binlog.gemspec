@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name              = 'ruby-binlog'
-  spec.version           = '0.1.3'
+  spec.version           = '0.1.4'
   spec.summary           = 'Ruby binding for MySQL Binary log API.'
   spec.description       = 'Ruby binding for MySQL Binary log API.'
   spec.files             = Dir.glob('ext/{*.cpp,*.h,extconf.rb}') + %w(README)
