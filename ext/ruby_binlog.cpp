@@ -16,19 +16,29 @@ namespace binlog {
 
 struct Client {
   Binary_log *m_binlog;
+  VALUE m_table_map;
 
   static void free(Client *p) {
     if (p->m_binlog) {
       delete p->m_binlog;
       p->m_binlog = 0;
+      p->m_table_map = 0;
     }
 
     delete p;
   }
 
+  static void mark(Client *p) {
+    if (p->m_table_map) {
+      rb_gc_mark(p->m_table_map);
+    }
+  }
+
   static VALUE alloc(VALUE klass) {
     Client *p = new Client();
-    return Data_Wrap_Struct(klass, 0, &free, p);
+    p->m_binlog = 0;
+    p->m_table_map = 0;
+    return Data_Wrap_Struct(klass, &mark, &free, p);
   }
 
   static VALUE initialize(VALUE self, VALUE uri) {
@@ -92,17 +102,18 @@ struct Client {
     case TABLE_MAP_EVENT:
       retval = rb_funcall(rb_cBinlogTableMapEvent, rb_intern("new"), 0);
       TableMapEvent::set_event(retval, event);
+      p->m_table_map = retval;
       break;
 
     // XXX: Is it right?
-    case PRE_GA_WRITE_ROWS_EVENT:
-    case PRE_GA_UPDATE_ROWS_EVENT:
-    case PRE_GA_DELETE_ROWS_EVENT:
+    //case PRE_GA_WRITE_ROWS_EVENT:
+    //case PRE_GA_UPDATE_ROWS_EVENT:
+    //case PRE_GA_DELETE_ROWS_EVENT:
     case WRITE_ROWS_EVENT: 
     case UPDATE_ROWS_EVENT:
     case DELETE_ROWS_EVENT:
       retval = rb_funcall(rb_cBinlogRowEvent, rb_intern("new"), 0);
-      RowEvent::set_event(retval, event);
+      RowEvent::set_event(retval, event, p->m_table_map);
       break;
 
     case INTVAR_EVENT:

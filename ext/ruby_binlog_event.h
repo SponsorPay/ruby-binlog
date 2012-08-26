@@ -98,13 +98,17 @@ struct TableMapEvent : public Event {
 
 struct RowEvent : public Event {
   mysql::Row_event *m_event;
+  VALUE m_table_map;
 
   static void free(RowEvent *p);
+  static void mark(RowEvent *p);
   static VALUE alloc(VALUE klass);
-  static void set_event(VALUE self, mysql::Binary_log_event *event);
+  static void set_event(VALUE self, mysql::Binary_log_event *event, VALUE table_map);
   static void init();
 
   static VALUE get_table_id(VALUE self);
+  static VALUE get_db_name(VALUE self);
+  static VALUE get_table_name(VALUE self);
   static VALUE get_flags(VALUE self);
   static VALUE get_columns_len(VALUE self);
   static VALUE get_null_bits_len(VALUE self);

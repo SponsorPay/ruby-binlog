@@ -9,10 +9,17 @@ void RowEvent::free(RowEvent *p) {
   if (p->m_event) {
     delete p->m_event;
     p->m_event = 0;
+    p->m_table_map = 0;
     p->m_event_header = 0;
   }
 
   delete p;
+}
+
+void RowEvent::mark(RowEvent *p) {
+  if (p->m_table_map) {
+    rb_gc_mark(p->m_table_map);
+  }
 }
 
 VALUE RowEvent::alloc(VALUE klass) {
@@ -20,16 +27,18 @@ VALUE RowEvent::alloc(VALUE klass) {
 
   p = new RowEvent();
   p->m_event = 0;
+  p->m_table_map = 0;
   p->m_event_header = 0;
 
-  return Data_Wrap_Struct(klass, 0, &free, p);
+  return Data_Wrap_Struct(klass, &mark, &free, p);
 }
 
-void RowEvent::set_event(VALUE self, mysql::Binary_log_event *event) {
+void RowEvent::set_event(VALUE self, mysql::Binary_log_event *event, VALUE table_map) {
   RowEvent *p;
 
   Data_Get_Struct(self, RowEvent, p);
   p->m_event = static_cast<Row_event*>(event);
+  p->m_table_map = table_map;
   p->m_event_header = event->header();
 }
 
@@ -40,6 +49,8 @@ void RowEvent::init() {
   Event::init(rb_cBinlogRowEvent);
 
   rb_define_method(rb_cBinlogRowEvent, "table_id",             __F(&get_table_id),             0);
+  rb_define_method(rb_cBinlogRowEvent, "db_name",              __F(&get_db_name),              0);
+  rb_define_method(rb_cBinlogRowEvent, "table_name",           __F(&get_table_name),           0);
   rb_define_method(rb_cBinlogRowEvent, "flags",                __F(&get_flags),                0);
   rb_define_method(rb_cBinlogRowEvent, "columns_len",          __F(&get_columns_len),          0);
   rb_define_method(rb_cBinlogRowEvent, "null_bits_len",        __F(&get_null_bits_len),        0);
@@ -52,6 +63,32 @@ VALUE RowEvent::get_table_id(VALUE self) {
   RowEvent *p;
   Data_Get_Struct(self, RowEvent, p);
   return ULL2NUM(p->m_event->table_id);
+}
+
+VALUE RowEvent::get_db_name(VALUE self) {
+  RowEvent *p;
+  Data_Get_Struct(self, RowEvent, p);
+
+  if (p->m_table_map) {
+    TableMapEvent *tme;
+    Data_Get_Struct(p->m_table_map, TableMapEvent, tme);
+    return rb_str_new2(tme->m_event->db_name.c_str());
+  } else {
+    return Qnil;
+  }
+}
+
+VALUE RowEvent::get_table_name(VALUE self) {
+  RowEvent *p;
+  Data_Get_Struct(self, RowEvent, p);
+
+  if (p->m_table_map) {
+    TableMapEvent *tme;
+    Data_Get_Struct(p->m_table_map, TableMapEvent, tme);
+    return rb_str_new2(tme->m_event->table_name.c_str());
+  } else {
+    return Qnil;
+  }
 }
 
 VALUE RowEvent::get_flags(VALUE self) {
