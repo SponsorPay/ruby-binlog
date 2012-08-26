@@ -22,6 +22,9 @@ gem install ruby-binlog
     case event
     when Binlog::QueryEvent
       puts event.query
+    when Binlog::RowEvent
+      puts event.event_type
+      p event.rows
     else
       puts "(#{event.event_type})"
     end
