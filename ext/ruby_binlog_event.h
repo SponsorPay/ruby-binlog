@@ -110,6 +110,7 @@ struct RowEvent : public Event {
   static VALUE get_table_id(VALUE self);
   static VALUE get_db_name(VALUE self);
   static VALUE get_table_name(VALUE self);
+  static VALUE get_column_types(VALUE self);
   static VALUE get_flags(VALUE self);
   static VALUE get_columns_len(VALUE self);
   static VALUE get_null_bits_len(VALUE self);

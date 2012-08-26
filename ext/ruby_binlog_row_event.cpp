@@ -51,6 +51,7 @@ void RowEvent::init() {
   rb_define_method(rb_cBinlogRowEvent, "table_id",                 __F(&get_table_id),             0);
   rb_define_method(rb_cBinlogRowEvent, "db_name",                  __F(&get_db_name),              0);
   rb_define_method(rb_cBinlogRowEvent, "table_name",               __F(&get_table_name),           0);
+  rb_define_method(rb_cBinlogRowEvent, "columns",                  __F(&get_column_types),         0);
   rb_define_method(rb_cBinlogRowEvent, "flags",                    __F(&get_flags),                0);
   rb_define_method(rb_cBinlogRowEvent, "columns_len",              __F(&get_columns_len),          0);
   rb_define_method(rb_cBinlogRowEvent, "null_bits_len",            __F(&get_null_bits_len),        0);
@@ -90,6 +91,27 @@ VALUE RowEvent::get_table_name(VALUE self) {
   } else {
     return Qnil;
   }
+}
+
+VALUE RowEvent::get_column_types(VALUE self) {
+  RowEvent *p;
+  Data_Get_Struct(self, RowEvent, p);
+  VALUE retval = Qnil;
+
+  if (p->m_table_map) {
+    TableMapEvent *tme;
+    retval = rb_ary_new();
+
+    Data_Get_Struct(p->m_table_map, TableMapEvent, tme);
+
+    for (std::vector<uint8_t>::iterator itor = tme->m_event->columns.begin();
+         itor != tme->m_event->columns.end(); itor++) {
+      const char *colname = get_field_type_str(static_cast<mysql::system::enum_field_types>(*itor));
+      rb_ary_push(retval, (colname ? rb_str_new2(colname) : Qnil));
+    }
+  }
+
+  return retval;
 }
 
 VALUE RowEvent::get_flags(VALUE self) {
