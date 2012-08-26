@@ -24,6 +24,7 @@ gem install ruby-binlog
       puts event.query
     when Binlog::RowEvent
       puts event.event_type
+      p event.columns
       p event.rows
     else
       puts "(#{event.event_type})"
