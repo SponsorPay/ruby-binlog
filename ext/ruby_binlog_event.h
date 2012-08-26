@@ -118,7 +118,10 @@ struct RowEvent : public Event {
   static VALUE get_rows(VALUE self);
 
 private:
-  static void proc_insert(mysql::Row_of_fields &fields, VALUE rb_row);
+  static void proc0(mysql::Row_of_fields &fields, VALUE rb_fields);
+  static VALUE proc_insert(mysql::Row_of_fields &fields);
+  static VALUE proc_update(mysql::Row_of_fields &old_fields, mysql::Row_of_fields &new_fields);
+  static VALUE proc_delete(mysql::Row_of_fields &fields);
 };
 
 struct IntVarEvent : public Event {

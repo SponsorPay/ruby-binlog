@@ -164,22 +164,23 @@ VALUE RowEvent::get_rows(VALUE self) {
   }
 
   Data_Get_Struct(p->m_table_map , TableMapEvent, tme);
-      std::cout << "4:" <<  tme->m_event->columns.size() << std::endl;
 
   mysql::Row_event_set rows(p->m_event, tme->m_event);
   mysql::Row_event_set::iterator itor = rows.begin();
 
   do {
+    VALUE rb_row = Qnil;
     mysql::Row_of_fields fields = *itor;
-    VALUE rb_row = rb_ary_new();
+    Log_event_type event_type = p->m_event->get_event_type();
 
-    switch (p->m_event->get_event_type()) {
-    case  mysql::WRITE_ROWS_EVENT:
-      proc_insert(fields, rb_row);
-      break;
-
-    default:
-      break;
+    if (event_type == mysql::WRITE_ROWS_EVENT) {
+      rb_row = proc_insert(fields);
+    } else if (event_type == mysql::UPDATE_ROWS_EVENT) {
+      itor++;
+      mysql::Row_of_fields fields2 = *itor;
+      rb_row = proc_update(fields, fields2);
+    } else if (event_type == mysql::DELETE_ROWS_EVENT) {
+      rb_row = proc_delete(fields);
     }
 
     /*
@@ -199,15 +200,42 @@ VALUE RowEvent::get_rows(VALUE self) {
   return retval;
 }
 
-void RowEvent::proc_insert(mysql::Row_of_fields &fields, VALUE rb_row) {
+void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
   mysql::Converter converter;
   mysql::Row_of_fields::iterator itor = fields.begin();
 
   do {
     std::string str;
     converter.to(str, *itor);
-    rb_ary_push(rb_row, rb_str_new2(str.c_str()));
+    rb_ary_push(rb_fields, rb_str_new2(str.c_str()));
   } while(++itor != fields.end());
+}
+
+VALUE RowEvent::proc_insert(mysql::Row_of_fields &fields) {
+  VALUE rb_new_fields = rb_ary_new();
+  proc0(fields, rb_new_fields);
+  return rb_new_fields;
+}
+
+VALUE RowEvent::proc_update(mysql::Row_of_fields &old_fields, mysql::Row_of_fields &new_fields) {
+  VALUE rb_row, rb_old_fields, rb_new_fields;
+
+  rb_row = rb_ary_new();
+  rb_old_fields = rb_ary_new();
+  rb_new_fields = rb_ary_new();
+
+  proc0(old_fields, rb_old_fields);
+  proc0(new_fields, rb_new_fields);
+  rb_ary_push(rb_row, rb_old_fields);
+  rb_ary_push(rb_row, rb_new_fields);
+
+  return rb_row;
+}
+
+VALUE RowEvent::proc_delete(mysql::Row_of_fields &fields) {
+  VALUE rb_old_fields = rb_ary_new();
+  proc0(fields, rb_old_fields);
+  return rb_old_fields;
 }
 
 } // namespace binlog
