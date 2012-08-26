@@ -23,6 +23,12 @@
 
 extern VALUE rb_mBinlog;
 
+namespace ruby {
+namespace binlog {
+const char* get_field_type_str(mysql::system::enum_field_types type);
+} // namespace binlog
+} // namespace ruby
+
 extern "C" {
 #ifdef _WIN32
 __declspec(dllexport)

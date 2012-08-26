@@ -39,13 +39,14 @@ void TableMapEvent::init() {
 
   Event::init(rb_cBinlogTableMapEvent);
 
-  rb_define_method(rb_cBinlogTableMapEvent, "table_id",   __F(&get_table_id),   0);
-  rb_define_method(rb_cBinlogTableMapEvent, "flags",      __F(&get_flags),      0);
-  rb_define_method(rb_cBinlogTableMapEvent, "db_name",    __F(&get_db_name),    0);
-  rb_define_method(rb_cBinlogTableMapEvent, "table_name", __F(&get_table_name), 0);
-  rb_define_method(rb_cBinlogTableMapEvent, "columns",    __F(&get_columns),    0);
-  rb_define_method(rb_cBinlogTableMapEvent, "metadata",   __F(&get_metadata),   0);
-  rb_define_method(rb_cBinlogTableMapEvent, "null_bits",  __F(&get_null_bits),  0);
+  rb_define_method(rb_cBinlogTableMapEvent, "table_id",    __F(&get_table_id),     0);
+  rb_define_method(rb_cBinlogTableMapEvent, "flags",       __F(&get_flags),        0);
+  rb_define_method(rb_cBinlogTableMapEvent, "db_name",     __F(&get_db_name),      0);
+  rb_define_method(rb_cBinlogTableMapEvent, "table_name",  __F(&get_table_name),   0);
+  rb_define_method(rb_cBinlogTableMapEvent, "raw_columns", __F(&get_columns),      0);
+  rb_define_method(rb_cBinlogTableMapEvent, "columns",     __F(&get_column_types), 0);
+  rb_define_method(rb_cBinlogTableMapEvent, "metadata",    __F(&get_metadata),     0);
+  rb_define_method(rb_cBinlogTableMapEvent, "null_bits",   __F(&get_null_bits),    0);
 }
 
 VALUE TableMapEvent::get_table_id(VALUE self) {
@@ -81,6 +82,21 @@ VALUE TableMapEvent::get_columns(VALUE self) {
   for (std::vector<uint8_t>::iterator itor = p->m_event->columns.begin();
        itor != p->m_event->columns.end(); itor++) {
     rb_ary_push(retval, UINT2NUM(*itor));
+  }
+
+  return retval;
+}
+
+VALUE TableMapEvent::get_column_types(VALUE self) {
+  TableMapEvent *p;
+  VALUE retval = rb_ary_new();
+
+  Data_Get_Struct(self, TableMapEvent, p);
+
+  for (std::vector<uint8_t>::iterator itor = p->m_event->columns.begin();
+       itor != p->m_event->columns.end(); itor++) {
+    const char *colname = get_field_type_str(static_cast<mysql::system::enum_field_types>(*itor));
+    rb_ary_push(retval, (colname ? rb_str_new2(colname) : Qnil));
   }
 
   return retval;

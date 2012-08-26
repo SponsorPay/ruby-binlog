@@ -92,6 +92,7 @@ struct TableMapEvent : public Event {
   static VALUE get_db_name(VALUE self);
   static VALUE get_table_name(VALUE self);
   static VALUE get_columns(VALUE self);
+  static VALUE get_column_types(VALUE self);
   static VALUE get_metadata(VALUE self);
   static VALUE get_null_bits(VALUE self);
 };
