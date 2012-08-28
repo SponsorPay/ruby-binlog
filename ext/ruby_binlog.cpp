@@ -63,17 +63,100 @@ struct Client {
     return (result == 0) ? Qtrue : Qfalse;
   }
 
+  // XXX: Don't use
+  /*
+  static VALUE disconnect(VALUE self) {
+    Client *p;
+    mysql::system::Binlog_tcp_driver *driver;
+
+    Data_Get_Struct(self, Client, p);
+    driver = cast_to_tcp_driver(p->m_binlog->m_driver);
+
+    if (driver) {
+      driver->disconnect();
+    }
+
+    return Qnil;
+  }
+   */
+
+  // XXX: Don't use
+  /*
+  static VALUE reconnect(VALUE self) {
+    Client *p;
+    mysql::system::Binlog_tcp_driver *driver;
+
+    Data_Get_Struct(self, Client, p);
+    driver = cast_to_tcp_driver(p->m_binlog->m_driver);
+
+    if (driver) {
+      driver->reconnect();
+    }
+
+    return Qnil;
+  }
+   */
+
+  static VALUE is_closed(VALUE self) {
+    Client *p;
+    mysql::system::Binlog_tcp_driver *driver;
+
+    Data_Get_Struct(self, Client, p);
+    driver = cast_to_tcp_driver(p->m_binlog->m_driver);
+
+    if (!driver) {
+      return Qfalse;
+    }
+
+    if (driver->m_socket && driver->m_socket->is_open()) {
+      return Qfalse;
+    } else {
+      return Qtrue;
+    }
+  }
+
   static VALUE wait_for_next_event(VALUE self) {
     Client *p;
     Binary_log_event *event;
-    int result;
+    int result = ERR_EOF;
     VALUE retval = Qnil;
+    mysql::system::Binlog_tcp_driver *driver;
 
     Data_Get_Struct(self, Client, p);
+    driver = cast_to_tcp_driver(p->m_binlog->m_driver);
 
-    TRAP_BEG;
-    result = p->m_binlog->wait_for_next_event(&event);
-    TRAP_END;
+    if (driver) {
+      int closed = 0;
+      timeval interval = { 0, WAIT_INTERVAL };
+
+      while (1) {
+        if (driver->m_event_queue->is_not_empty()) {
+          TRAP_BEG;
+          result = p->m_binlog->wait_for_next_event(&event);
+          TRAP_END;
+          break;
+        } else {
+          if (driver->m_socket && driver->m_socket->is_open()) {
+            rb_thread_wait_for(interval);
+          } else {
+            closed = 1;
+            driver->shutdown();
+            rb_thread_wait_for(interval);
+            break;
+          }
+        }
+      }
+
+      if (closed) {
+        driver->disconnect();
+        rb_raise(rb_eBinlogError, "MySQL server has gone away");
+      }
+    } else {
+      TRAP_BEG;
+      result = p->m_binlog->wait_for_next_event(&event);
+      TRAP_END;
+    }
+
 
     if (result == ERR_EOF) {
       return Qfalse;
@@ -168,7 +251,7 @@ struct Client {
     case ERR_EOF:
       retval = Qfalse;
     default:
-      rb_raise(rb_eRuntimeError, "An unspecified error occurred (%d)", result);
+      rb_raise(rb_eBinlogError, "An unspecified error occurred (%d)", result);
       break;
     }
 
@@ -190,7 +273,7 @@ struct Client {
     case ERR_EOF:
       retval = Qfalse;
     default:
-      rb_raise(rb_eRuntimeError, "An unspecified error occurred (%d)", result);
+      rb_raise(rb_eBinlogError, "An unspecified error occurred (%d)", result);
       break;
     }
 
@@ -227,6 +310,10 @@ struct Client {
     rb_define_alloc_func(rb_cBinlogClient, &alloc);
     rb_define_private_method(rb_cBinlogClient, "initialize", __F(&initialize), 1);
     rb_define_method(rb_cBinlogClient, "connect", __F(&connect), 0);
+    // XXX: Don't use
+    //rb_define_method(rb_cBinlogClient, "disconnect", __F(&disconnect), 0);
+    //rb_define_method(rb_cBinlogClient, "reconnect", __F(&reconnect), 0);
+    rb_define_method(rb_cBinlogClient, "closed?", __F(&is_closed), 0);
     rb_define_method(rb_cBinlogClient, "wait_for_next_event", __F(&wait_for_next_event), 0);
     rb_define_method(rb_cBinlogClient, "set_position", __F(&set_position), -1);
     rb_define_method(rb_cBinlogClient, "position=", __F(&set_position2), 1);
@@ -240,10 +327,12 @@ struct Client {
 
 VALUE rb_mBinlog;
 VALUE rb_cBinlogEvent;
+VALUE rb_eBinlogError;
 
 void Init_binlog() {
   rb_mBinlog = rb_define_module("Binlog");
   rb_cBinlogEvent = rb_define_class_under(rb_mBinlog, "Event", rb_cObject);
+  rb_eBinlogError = rb_define_class_under(rb_mBinlog, "Error", rb_eRuntimeError);
 
   rb_define_const(rb_cBinlogEvent, "UNKNOWN_EVENT",            INT2NUM(0));
   rb_define_const(rb_cBinlogEvent, "START_EVENT_V3",           INT2NUM(1));

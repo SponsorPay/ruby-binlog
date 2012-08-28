@@ -14,19 +14,37 @@ gem install ruby-binlog
 
   require "binlog"
   
-  client = Binlog::Client.new("mysql://repl:repl@nyarlathotep")
-  client.connect
-  client.position = 4
+  master_log_file = "mysql-bin.000001"
+  master_log_pos = 4
   
-  while event = client.wait_for_next_event
-    case event
-    when Binlog::QueryEvent
-      puts event.query
-    when Binlog::RowEvent
-      puts event.event_type
-      p event.columns
-      p event.rows
+  begin
+    client = Binlog::Client.new("mysql://repl:repl@example.com")
+    client.connect
+    client.set_position(master_log_file, master_log_pos)
+  
+    while event = client.wait_for_next_event
+      master_log_pos = event.next_position
+  
+      case event
+      when Binlog::QueryEvent
+        puts event.query
+      when Binlog::RowEvent
+        puts event.event_type
+        p event.columns
+        p event.rows
+      when Binlog::RotateEvent
+        master_log_file = event.binlog_file
+      else
+        puts "(#{event.event_type})"
+      end
+    end
+  rescue Binlog::Error => e
+    p e
+  
+    if client.closed?
+      sleep 10
+      retry
     else
-      puts "(#{event.event_type})"
+      raise e
     end
   end
