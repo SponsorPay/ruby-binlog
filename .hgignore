@@ -5,3 +5,4 @@ Makefile
 mkmf.log
 *.gem
 test.rb
+*.orig
