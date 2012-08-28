@@ -137,11 +137,10 @@ struct Client {
       int closed = 0;
       timeval interval = { 0, WAIT_INTERVAL };
 
+      TRAP_BEG;
       while (1) {
         if (driver->m_event_queue->is_not_empty()) {
-          TRAP_BEG;
           result = p->m_binlog->wait_for_next_event(&event);
-          TRAP_END;
           break;
         } else {
           if (driver->m_socket && driver->m_socket->is_open()) {
@@ -154,9 +153,13 @@ struct Client {
           }
         }
       }
+      TRAP_END;
 
       if (closed) {
+        TRAP_BEG;
         driver->disconnect();
+        TRAP_END;
+
         rb_raise(rb_eBinlogError, "MySQL server has gone away");
       }
     } else {
