@@ -58,7 +58,9 @@ struct Client {
     int result;
 
     Data_Get_Struct(self, Client, p);
+    TRAP_BEG;
     result = p->m_binlog->connect();
+    TRAP_END;
 
     return (result == 0) ? Qtrue : Qfalse;
   }
@@ -108,8 +110,14 @@ struct Client {
       return Qfalse;
     }
 
-    if (driver->m_socket && driver->m_socket->is_open()) {
-      return Qfalse;
+    if (driver->m_socket) {
+      bool socket_is_open;
+
+      TRAP_BEG;
+      socket_is_open = driver->m_socket->is_open();
+      TRAP_END;
+
+      return socket_is_open ? Qfalse : Qtrue;
     } else {
       return Qtrue;
     }
@@ -235,13 +243,17 @@ struct Client {
     if (NIL_P(position)) {
       unsigned long i_position;
       i_position = NUM2ULONG(filename);
+      TRAP_BEG;
       result = p->m_binlog->set_position(i_position);
+      TRAP_END;
     } else {
       unsigned long i_position;
       Check_Type(filename, T_STRING);
       i_position = NUM2ULONG(position);
       std::string s_filename(StringValuePtr(filename));
+      TRAP_BEG;
       result = p->m_binlog->set_position(s_filename, i_position);
+      TRAP_END;
     }
 
     switch (result) {
@@ -264,7 +276,9 @@ struct Client {
     int result;
 
     Data_Get_Struct(self, Client, p);
+    TRAP_BEG;
     result = p->m_binlog->set_position(NUM2ULONG(position));
+    TRAP_END;
 
     switch (result) {
     case ERR_OK:
@@ -293,7 +307,9 @@ struct Client {
     } else {
       Check_Type(filename, T_STRING);
       std::string s_filename(StringValuePtr(filename));
+      TRAP_BEG;
       position = p->m_binlog->get_position(s_filename);
+      TRAP_END;
     }
 
     return ULONG2NUM(position);
@@ -302,7 +318,13 @@ struct Client {
   static VALUE get_position2(VALUE self) {
     Client *p;
     Data_Get_Struct(self, Client, p);
-    return ULONG2NUM(p->m_binlog->get_position());
+    unsigned long position;
+
+    TRAP_BEG;
+    position = p->m_binlog->get_position();
+    TRAP_END;
+
+    return ULONG2NUM(position);
   }
 
   static void init() {
