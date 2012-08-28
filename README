@@ -19,7 +19,7 @@ gem install ruby-binlog
   
   begin
     client = Binlog::Client.new("mysql://repl:repl@example.com")
-    client.connect
+    sleep 0.3 until client.connect
     client.set_position(master_log_file, master_log_pos)
   
     while event = client.wait_for_next_event
@@ -39,12 +39,7 @@ gem install ruby-binlog
       end
     end
   rescue Binlog::Error => e
-    p e
-  
-    if client.closed?
-      sleep 10
-      retry
-    else
-      raise e
-    end
+    puts e
+    retry if client.closed?
+    raise e
   end
