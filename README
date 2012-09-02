@@ -10,6 +10,12 @@ see http://www.oscon.com/oscon2011/public/schedule/detail/18785
 
 gem install ruby-binlog
 
+== Required Privileges
+
+* SUPER
+* REPLICATION SLAVE
+* EVENT
+
 == Example
 
   require "binlog"
