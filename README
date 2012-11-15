@@ -49,3 +49,10 @@ gem install ruby-binlog
     retry if client.closed?
     raise e
   end
+
+== Notice
+
+The following type are not supported in row mode. 
+
+* DATE
+* ENUM
