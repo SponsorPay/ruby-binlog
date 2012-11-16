@@ -4,7 +4,8 @@
 
 ruby-binlog is Ruby binding for MySQL Binary log API.
 
-see http://www.oscon.com/oscon2011/public/schedule/detail/18785
+* http://www.oscon.com/oscon2011/public/schedule/detail/18785
+* https://launchpad.net/mysql-replication-listener
 
 == Install
 
@@ -54,5 +55,14 @@ gem install ruby-binlog
 
 The following type are not supported in row mode. 
 
+* DECIMAL
+* INT24
 * DATE
+* TIME
+* YEAR
+* BIT
 * ENUM
+* SET
+* GEOMETRY
+
+see http://bazaar.launchpad.net/~mysql/mysql-replication-listener/trunk/view/head:/src/value.cpp#L310
