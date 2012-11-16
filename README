@@ -34,9 +34,12 @@ gem install ruby-binlog
   
       case event
       when Binlog::QueryEvent
+        puts event.db_name
         puts event.query
       when Binlog::RowEvent
         puts event.event_type
+        puts event.db_name
+        puts event.table_name
         p event.columns
         p event.rows
       when Binlog::RotateEvent
