@@ -217,9 +217,22 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
   mysql::Row_of_fields::iterator itor = fields.begin();
 
   do {
-    std::string str;
-    converter.to(str, *itor);
-    rb_ary_push(rb_fields, rb_str_new2(str.c_str()));
+    VALUE rval = Qnil;
+    mysql::system::enum_field_types type = itor->type();
+
+    if (itor->is_null()) {
+      rval = Qnil;
+    } else if (type == mysql::system::MYSQL_TYPE_FLOAT) {
+      rval = rb_float_new(itor->as_float());
+    } else if (type == mysql::system::MYSQL_TYPE_DOUBLE) {
+      rval = rb_float_new(itor->as_double());
+    } else {
+      std::string out;
+      converter.to(out, *itor);
+      rval = rb_str_new2(out.c_str());
+    }
+
+    rb_ary_push(rb_fields, rval);
   } while(++itor != fields.end());
 }
 
