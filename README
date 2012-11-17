@@ -25,6 +25,7 @@ gem install ruby-binlog
   master_log_pos = 4
   
   begin
+    # XXX: Do not reuse a client instance, after connection goes out.
     client = Binlog::Client.new("mysql://repl:repl@example.com")
     sleep 0.3 until client.connect
     client.set_position(master_log_file, master_log_pos)
@@ -56,7 +57,7 @@ gem install ruby-binlog
 
 == Notice
 
-The following type are not supported in row mode. 
+The following type are not supported in row mode.
 
 * DECIMAL
 * INT24
@@ -68,4 +69,6 @@ The following type are not supported in row mode.
 * SET
 * GEOMETRY
 
-see http://bazaar.launchpad.net/~mysql/mysql-replication-listener/trunk/view/head:/src/value.cpp#L310
+see the following urls:
+* http://bazaar.launchpad.net/~mysql/mysql-replication-listener/trunk/view/head:/src/value.cpp#L310
+* https://bitbucket.org/winebarrel/ruby-binlog/downloads
