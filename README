@@ -6,6 +6,7 @@ ruby-binlog is Ruby binding for MySQL Binary log API.
 
 * http://www.oscon.com/oscon2011/public/schedule/detail/18785
 * https://launchpad.net/mysql-replication-listener
+  * https://bitbucket.org/winebarrel/mysql-replication-listener
 
 == Install
 
