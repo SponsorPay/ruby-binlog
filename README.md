@@ -1,6 +1,10 @@
-= ruby-binlog
+NOTE
+====
 
-== Description
+This is a fork (converted to git) from https://bitbucket.org/winebarrel/ruby-binlog
+
+Description
+===========
 
 ruby-binlog is Ruby binding for MySQL Binary log API.
 
@@ -8,18 +12,22 @@ ruby-binlog is Ruby binding for MySQL Binary log API.
 * https://launchpad.net/mysql-replication-listener
   * https://bitbucket.org/winebarrel/mysql-replication-listener
 
-== Install
+Install
+=======
 
 gem install ruby-binlog
 
-== Required Privileges
+Required Privileges
+===================
 
 * SUPER
 * REPLICATION SLAVE
 * EVENT
 
-== Example
+Example
+=======
 
+``` ruby
   #!/usr/bin/env ruby
   require "rubygems"
   require "binlog"
@@ -83,8 +91,10 @@ gem install ruby-binlog
     retry if client.closed?
     raise e
   end
+```
 
-== Notice
+Notice
+======
 
 The following type are not supported in row mode.
 
