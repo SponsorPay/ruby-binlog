@@ -355,6 +355,8 @@ VALUE rb_cBinlogEvent;
 VALUE rb_eBinlogError;
 
 void Init_binlog() {
+  rb_funcall(rb_cObject, rb_intern("require"), 1, rb_str_new2("date"));
+              
   rb_mBinlog = rb_define_module("Binlog");
   rb_cBinlogEvent = rb_define_class_under(rb_mBinlog, "Event", rb_cObject);
   rb_eBinlogError = rb_define_class_under(rb_mBinlog, "Error", rb_eRuntimeError);

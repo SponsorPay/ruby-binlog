@@ -218,18 +218,56 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
 
   do {
     VALUE rval = Qnil;
-    mysql::system::enum_field_types type = itor->type();
 
-    if (itor->is_null()) {
-      rval = Qnil;
-    } else if (type == mysql::system::MYSQL_TYPE_FLOAT) {
-      rval = rb_float_new(itor->as_float());
-    } else if (type == mysql::system::MYSQL_TYPE_DOUBLE) {
-      rval = rb_float_new(itor->as_double());
-    } else {
-      std::string out;
-      converter.to(out, *itor);
-      rval = rb_str_new2(out.c_str());
+    switch(itor->type()) {
+      case mysql::system::MYSQL_TYPE_NULL:
+        rval = Qnil;
+        break;
+      case mysql::system::MYSQL_TYPE_FLOAT:
+        rval = rb_float_new(itor->as_float());
+        break;
+      case mysql::system::MYSQL_TYPE_DOUBLE:
+        rval = rb_float_new(itor->as_double());
+        break;
+      case mysql::system::MYSQL_TYPE_TINY:
+        rval = INT2NUM(itor->as_int8());
+        break;
+      case mysql::system::MYSQL_TYPE_SHORT:
+        rval = INT2NUM(itor->as_int16());
+        break;
+      case mysql::system::MYSQL_TYPE_LONG:
+        rval = INT2NUM(itor->as_int32());
+        break;
+      case mysql::system::MYSQL_TYPE_LONGLONG:
+        rval = INT2NUM(itor->as_int64());
+        break;
+      case mysql::system::MYSQL_TYPE_VAR_STRING:
+        rval = rb_str_new(itor->storage(), itor->length());
+        break;
+      case mysql::system::MYSQL_TYPE_DATETIME:
+        {
+          boost::uint64_t timestamp = itor->as_int64();
+          unsigned long d = timestamp / 1000000;
+          unsigned long t = timestamp % 1000000;
+
+          VALUE DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
+          rval = rb_funcall(DateTime, rb_intern("new"), 6,
+              INT2FIX(d / 10000), INT2FIX((d % 10000) / 100), INT2FIX(d % 100),
+              INT2FIX(t / 10000), INT2FIX((t % 10000) / 100), INT2FIX(t % 100));
+
+        } break;
+      case mysql::system::MYSQL_TYPE_VARCHAR:
+        {
+          unsigned long size;
+          char *ptr = itor->as_c_str(size);
+          rval = rb_str_new(ptr, size);
+        } break;
+      default: 
+        {
+          std::string out;
+          converter.to(out, *itor);
+          rval = rb_str_new(out.c_str(), out.length());
+        } break;
     }
 
     rb_ary_push(rb_fields, rval);
