@@ -213,66 +213,132 @@ VALUE RowEvent::get_rows(VALUE self) {
 }
 
 void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
-  mysql::Converter converter;
   mysql::Row_of_fields::iterator itor = fields.begin();
 
   do {
     VALUE rval = Qnil;
 
+    if (itor->is_null()) {
+      rb_ary_push(rb_fields, rval);
+      continue;
+    }
+
     switch(itor->type()) {
-      case mysql::system::MYSQL_TYPE_NULL:
-        rval = Qnil;
-        break;
       case mysql::system::MYSQL_TYPE_FLOAT:
         rval = rb_float_new(itor->as_float());
         break;
+
       case mysql::system::MYSQL_TYPE_DOUBLE:
         rval = rb_float_new(itor->as_double());
         break;
+
       case mysql::system::MYSQL_TYPE_TINY:
         rval = INT2NUM(itor->as_int8());
         break;
+
       case mysql::system::MYSQL_TYPE_SHORT:
         rval = INT2NUM(itor->as_int16());
         break;
+
+      case mysql::system::MYSQL_TYPE_INT24: {
+        const unsigned char* buf = (const unsigned char*) itor->storage();
+        if (buf[2] & 0x80) {
+          rval = INT2NUM((0xff << 24) | (buf[2] << 16) | (buf[1] << 8) | (buf[0] << 0));
+        } else {
+          rval = INT2NUM((buf[2] << 16) | (buf[1] << 8) | (buf[0] << 0));
+        }
+      } break;
+
       case mysql::system::MYSQL_TYPE_LONG:
         rval = INT2NUM(itor->as_int32());
         break;
+
       case mysql::system::MYSQL_TYPE_LONGLONG:
         rval = INT2NUM(itor->as_int64());
         break;
+
+      case mysql::system::MYSQL_TYPE_BIT: {
+        const unsigned char* buf = (const unsigned char*) itor->storage();
+	int len = (itor->metadata() >> 8U) & 0xff;
+        if (itor->metadata() & 0xff) len++;
+
+        boost::uint64_t result = 0;
+        for(int i = 0; i < len; i++) {
+          result |= buf[len - i - 1] << (i * 8);
+        }
+
+        rval = INT2NUM(result);
+      } break;
+
       case mysql::system::MYSQL_TYPE_VAR_STRING:
         rval = rb_str_new(itor->storage(), itor->length());
         break;
-      case mysql::system::MYSQL_TYPE_NEWDECIMAL:
-        {
-          std::string s = decimal2str(*itor);
-          VALUE BigDecimal = rb_const_get(rb_cObject, rb_intern("BigDecimal"));
-          rval = rb_funcall(BigDecimal, rb_intern("new"), 1, rb_str_new(s.c_str(), s.length()));
-        } break;
-      case mysql::system::MYSQL_TYPE_DATETIME:
-        {
-          boost::uint64_t timestamp = itor->as_int64();
-          unsigned long d = timestamp / 1000000;
-          unsigned long t = timestamp % 1000000;
 
-          VALUE DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
-          rval = rb_funcall(DateTime, rb_intern("new"), 6,
-              INT2FIX(d / 10000), INT2FIX((d % 10000) / 100), INT2FIX(d % 100),
-              INT2FIX(t / 10000), INT2FIX((t % 10000) / 100), INT2FIX(t % 100));
-        } break;
-      case mysql::system::MYSQL_TYPE_VARCHAR:
-        {
-          unsigned long size;
-          char *ptr = itor->as_c_str(size);
-          rval = rb_str_new(ptr, size);
-        } break;
-      default: 
-        {
-          std::string out;
-          converter.to(out, *itor);
-          rval = rb_str_new(out.c_str(), out.length());
-        } break;
+      case mysql::system::MYSQL_TYPE_TIMESTAMP:
+        rval = INT2NUM((boost::uint32_t)itor->as_int32());
+        break;
+
+      case mysql::system::MYSQL_TYPE_NEWDECIMAL: {
+        std::string s = decimal2str(*itor);
+        VALUE BigDecimal = rb_const_get(rb_cObject, rb_intern("BigDecimal"));
+        rval = rb_funcall(BigDecimal, rb_intern("new"), 1, rb_str_new(s.c_str(), s.length()));
+      } break;
+
+      case mysql::system::MYSQL_TYPE_DATE: {
+        const char* storage = itor->storage();
+        unsigned int date = (storage[0] & 0xff) + ((storage[1] & 0xff) << 8) + ((storage[2] & 0xff) << 16);
+        unsigned int year = date >> 9;
+        date-= (year << 9);
+        unsigned int month = date >> 5;
+        unsigned int day = date - (month << 5);
+
+        VALUE Date = rb_const_get(rb_cObject, rb_intern("Date"));
+        rval = rb_funcall(Date, rb_intern("new"), 3, year, month, day);
+      } break;
+
+      case mysql::system::MYSQL_TYPE_TIME: {
+        const char* storage = itor->storage();
+        unsigned int time = (storage[0] & 0xff) + ((storage[1] & 0xff) << 8) + ((storage[2] & 0xff) << 16);
+        unsigned int sec = time % 100;
+        time -= sec;
+        unsigned int min = (time % 10000) / 100;
+        unsigned int hour = (time - min) / 10000;
+
+        VALUE Time = rb_const_get(rb_cObject, rb_intern("Time"));
+        rval = rb_funcall(Time, rb_intern("utc"), 6, 2000, 1, 1, hour, min, sec);
+      } break;
+
+      case mysql::system::MYSQL_TYPE_YEAR: {
+        const char* storage = itor->storage();
+        unsigned int year = (storage[0] & 0xff);
+        rval = INT2NUM(year > 0 ? (year + 1900) : 0);
+      } break;
+
+      case mysql::system::MYSQL_TYPE_DATETIME: {
+        boost::uint64_t timestamp = itor->as_int64();
+        unsigned long d = timestamp / 1000000;
+        unsigned long t = timestamp % 1000000;
+
+        VALUE DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
+        rval = rb_funcall(DateTime, rb_intern("new"), 6,
+            INT2FIX(d / 10000), INT2FIX((d % 10000) / 100), INT2FIX(d % 100),
+            INT2FIX(t / 10000), INT2FIX((t % 10000) / 100), INT2FIX(t % 100));
+      } break;
+
+      case mysql::system::MYSQL_TYPE_VARCHAR: {
+        unsigned long size;
+        char *ptr = itor->as_c_str(size);
+        rval = rb_str_new(ptr, size);
+      } break;
+
+      case mysql::system::MYSQL_TYPE_TINY_BLOB:
+      case mysql::system::MYSQL_TYPE_MEDIUM_BLOB:
+      case mysql::system::MYSQL_TYPE_LONG_BLOB:
+      case mysql::system::MYSQL_TYPE_BLOB: {
+        unsigned long size;
+        unsigned char *ptr = itor->as_blob(size);
+        rval = rb_str_new((const char *)ptr, size);
+      } break;
     }
 
     rb_ary_push(rb_fields, rval);
