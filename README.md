@@ -98,17 +98,6 @@ Notice
 
 The following type are not supported in row mode.
 
-* DECIMAL
-* INT24
-* DATE
-* TIME
-* YEAR
-* BIT
 * ENUM
 * SET
 * GEOMETRY
-
-see the following urls:
-* http://bazaar.launchpad.net/~mysql/mysql-replication-listener/trunk/view/head:/src/value.cpp#L310
-* https://bitbucket.org/winebarrel/ruby-binlog/downloads
-  * There is a patch of a library.
