@@ -33,6 +33,7 @@ namespace ruby {
 namespace binlog {
 const char* get_field_type_str(mysql::system::enum_field_types type);
 mysql::system::Binlog_tcp_driver *cast_to_tcp_driver(mysql::system::Binary_log_driver *driver);
+std::string decimal2str(const mysql::Value& val);
 } // namespace binlog
 } // namespace ruby
 

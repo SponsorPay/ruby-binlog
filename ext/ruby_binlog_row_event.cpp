@@ -212,55 +212,6 @@ VALUE RowEvent::get_rows(VALUE self) {
   return retval;
 }
 
-std::string decimal2string(const mysql::Value& val) {
-  int precision = val.metadata() & 0xff;
-  int scale = val.metadata() >> 8;
-  
-  int digits_per_integer = 9;
-  int compressed_bytes[] = {0, 1, 1, 2, 2, 3, 3, 4, 4, 4};
-  int integral = (precision - scale);
-  int uncomp_integral = integral / digits_per_integer;
-  int uncomp_fractional = scale / digits_per_integer;
-  int comp_integral = integral - (uncomp_integral * digits_per_integer);
-  int comp_fractional = scale - (uncomp_fractional * digits_per_integer);
-  
-  // The sign is encoded in the high bit of the first byte/digit. The byte
-  // might be part of a larger integer, so apply the optional bit-flipper
-  // and push back the byte into the input stream.
-/*
-  value = read_uint8;
-  str, mask = (value & 0x80 != 0) ? ["", 0] : ["-", -1];
-  reader.unget(value ^ 0x80);
-  
-  size = compressed_bytes[comp_integral];
-  
-  if (size > 0) {
-    value = read_int_be_by_size(size) ^ mask
-    str << value.to_s
-  }
-  
-  (1..uncomp_integral).each do
-    value = read_int32_be ^ mask
-    str << value.to_s
-  end
-  
-  str << "."
-  
-  (1..uncomp_fractional).each do
-    value = read_int32_be ^ mask
-    str << value.to_s
-  end
-  
-  size = compressed_bytes[comp_fractional];
-  
-  if (size > 0)
-    value = read_int_be_by_size(size) ^ mask
-    str << value.to_s
-  }
-*/
-  return "0";
-}
-
 void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
   mysql::Converter converter;
   mysql::Row_of_fields::iterator itor = fields.begin();
@@ -295,7 +246,7 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         break;
       case mysql::system::MYSQL_TYPE_NEWDECIMAL:
         {
-          std::string s = decimal2string(*itor);
+          std::string s = decimal2str(*itor);
           VALUE BigDecimal = rb_const_get(rb_cObject, rb_intern("BigDecimal"));
           rval = rb_funcall(BigDecimal, rb_intern("new"), 1, rb_str_new(s.c_str(), s.length()));
         } break;
