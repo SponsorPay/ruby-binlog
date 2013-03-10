@@ -339,6 +339,8 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         unsigned char *ptr = itor->as_blob(size);
         rval = rb_str_new((const char *)ptr, size);
       } break;
+
+      default: break;
     }
 
     rb_ary_push(rb_fields, rval);

@@ -53,14 +53,68 @@ struct Client {
     return Qnil;
   }
 
+  static VALUE binlog_connect(void* binlog) {
+    return ((Binary_log*)binlog)->connect();
+  }
+
+  static VALUE socket_is_open(void* socket) {
+    return ((tcp::socket*)socket)->is_open();
+  }
+
+  static VALUE driver_queue_is_not_empty(void* driver) {
+    return ((mysql::system::Binlog_tcp_driver*)driver)->m_event_queue->is_not_empty();
+  }
+
+  static VALUE driver_shutdown(void* driver) {
+    ((mysql::system::Binlog_tcp_driver*)driver)->shutdown();
+    return 0;
+  }
+
+  static VALUE driver_disconnect(void* driver) {
+    ((mysql::system::Binlog_tcp_driver*)driver)->disconnect();
+    return 0;
+  }
+
+  struct Binlog_and_Event {
+    Binary_log* binlog;
+    Binary_log_event** event;
+  };
+
+  static VALUE binlog_wait_for_next_event(void* p) {
+    Binlog_and_Event* data = (Binlog_and_Event*)p;
+    return (data->binlog)->wait_for_next_event(data->event);
+  }
+
+  struct Filename_and_Position {
+    Binary_log* binlog;
+    std::string* filename;
+    unsigned long position;
+  };
+
+  static VALUE binlog_set_position(void* p) {
+    Filename_and_Position *data = (Filename_and_Position*)p;
+    if (data->filename) {
+      return data->binlog->set_position(*(data->filename), data->position);
+    } else {
+      return data->binlog->set_position(data->position);
+    }
+  }
+
+  static VALUE binlog_get_position(void* p) {
+    Filename_and_Position *data = (Filename_and_Position*)p;
+    if (data->filename) {
+      return data->binlog->get_position(*(data->filename));
+    } else {
+      return data->binlog->get_position();
+    }
+  }
+
   static VALUE connect(VALUE self) {
     Client *p;
     int result;
 
     Data_Get_Struct(self, Client, p);
-    TRAP_BEG;
-    result = p->m_binlog->connect();
-    TRAP_END;
+    result = rb_thread_blocking_region(binlog_connect, p->m_binlog, RUBY_UBF_IO, 0);
 
     return (result == 0) ? Qtrue : Qfalse;
   }
@@ -111,13 +165,11 @@ struct Client {
     }
 
     if (driver->m_socket) {
-      bool socket_is_open;
+      bool open;
 
-      TRAP_BEG;
-      socket_is_open = driver->m_socket->is_open();
-      TRAP_END;
+      open = rb_thread_blocking_region(socket_is_open, driver->m_socket, RUBY_UBF_IO, 0);
 
-      return socket_is_open ? Qfalse : Qtrue;
+      return open ? Qfalse : Qtrue;
     } else {
       return Qtrue;
     }
@@ -137,37 +189,31 @@ struct Client {
       int closed = 0;
       timeval interval = { 0, WAIT_INTERVAL };
 
-      TRAP_BEG;
       while (1) {
-        if (driver->m_event_queue->is_not_empty()) {
-          result = p->m_binlog->wait_for_next_event(&event);
+        if (rb_thread_blocking_region(driver_queue_is_not_empty, driver, RUBY_UBF_IO, 0)) {
+          Binlog_and_Event params = {p->m_binlog, &event};
+          result = rb_thread_blocking_region(binlog_wait_for_next_event, &params, RUBY_UBF_IO, 0);
           break;
         } else {
-          if (driver->m_socket && driver->m_socket->is_open()) {
+          if (driver->m_socket && rb_thread_blocking_region(socket_is_open, driver->m_socket, RUBY_UBF_IO, 0)) {
             rb_thread_wait_for(interval);
           } else {
             closed = 1;
-            driver->shutdown();
+            rb_thread_blocking_region(driver_shutdown, driver, RUBY_UBF_IO, 0);
             rb_thread_wait_for(interval);
             break;
           }
         }
       }
-      TRAP_END;
 
       if (closed) {
-        TRAP_BEG;
-        driver->disconnect();
-        TRAP_END;
-
+        rb_thread_blocking_region(driver_disconnect, driver, RUBY_UBF_IO, 0);
         rb_raise(rb_eBinlogError, "MySQL server has gone away");
       }
     } else {
-      TRAP_BEG;
-      result = p->m_binlog->wait_for_next_event(&event);
-      TRAP_END;
+      Binlog_and_Event params = {p->m_binlog, &event};
+      result = rb_thread_blocking_region(binlog_wait_for_next_event, &params, RUBY_UBF_IO, 0);
     }
-
 
     if (result == ERR_EOF) {
       return Qfalse;
@@ -246,17 +292,15 @@ struct Client {
     if (NIL_P(position)) {
       unsigned long i_position;
       i_position = NUM2ULONG(filename);
-      TRAP_BEG;
-      result = p->m_binlog->set_position(i_position);
-      TRAP_END;
+      Filename_and_Position params = {p->m_binlog, 0, i_position};
+      result = rb_thread_blocking_region(binlog_set_position, &params, RUBY_UBF_IO, 0);
     } else {
       unsigned long i_position;
       Check_Type(filename, T_STRING);
       i_position = NUM2ULONG(position);
       std::string s_filename(StringValuePtr(filename));
-      TRAP_BEG;
-      result = p->m_binlog->set_position(s_filename, i_position);
-      TRAP_END;
+      Filename_and_Position params = {p->m_binlog, &s_filename, i_position};
+      result = rb_thread_blocking_region(binlog_set_position, &params, RUBY_UBF_IO, 0);
     }
 
     switch (result) {
@@ -279,9 +323,8 @@ struct Client {
     int result;
 
     Data_Get_Struct(self, Client, p);
-    TRAP_BEG;
-    result = p->m_binlog->set_position(NUM2ULONG(position));
-    TRAP_END;
+    Filename_and_Position params = {p->m_binlog, 0, NUM2ULONG(position)};
+    result = rb_thread_blocking_region(binlog_set_position, &params, RUBY_UBF_IO, 0);
 
     switch (result) {
     case ERR_OK:
@@ -310,9 +353,8 @@ struct Client {
     } else {
       Check_Type(filename, T_STRING);
       std::string s_filename(StringValuePtr(filename));
-      TRAP_BEG;
-      position = p->m_binlog->get_position(s_filename);
-      TRAP_END;
+      Filename_and_Position params = {p->m_binlog, &s_filename, 0};
+      position = rb_thread_blocking_region(binlog_get_position, &params, RUBY_UBF_IO, 0);
     }
 
     return ULONG2NUM(position);
@@ -323,9 +365,8 @@ struct Client {
     Data_Get_Struct(self, Client, p);
     unsigned long position;
 
-    TRAP_BEG;
-    position = p->m_binlog->get_position();
-    TRAP_END;
+    Filename_and_Position params = {p->m_binlog, 0, 0};
+    position = rb_thread_blocking_region(binlog_get_position, &params, RUBY_UBF_IO, 0);
 
     return ULONG2NUM(position);
   }

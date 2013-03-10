@@ -64,7 +64,7 @@ std::string decimal2str(const mysql::Value& val) {
 
   if (intg0x) {
     int i = dig2bytes[intg0x];
-    dec1 x = x;
+    dec1 x = 0;
     switch (i) {
       case 1: x = mi_sint1korr(from); break;
       case 2: x = mi_sint2korr(from); break;
@@ -87,7 +87,7 @@ std::string decimal2str(const mysql::Value& val) {
 
   if (frac0x) {
     int i = dig2bytes[frac0x];
-    dec1 x = x;
+    dec1 x = 0;
 
     switch (i) {
       case 1: x=mi_sint1korr(from); break;
