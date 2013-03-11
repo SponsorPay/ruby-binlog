@@ -305,7 +305,7 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         unsigned int hour = (time - min) / 10000;
 
         VALUE Time = rb_const_get(rb_cObject, rb_intern("Time"));
-        rval = rb_funcall(Time, rb_intern("utc"), 6, 2000, 1, 1, hour, min, sec);
+        rval = rb_funcall(Time, rb_intern("utc"), 6, 2000, 1, 1, UINT2NUM(hour), UINT2NUM(min), UINT2NUM(sec));
       } break;
 
       case mysql::system::MYSQL_TYPE_YEAR: {
