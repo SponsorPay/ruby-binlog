@@ -293,7 +293,7 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         unsigned int day = date - (month << 5);
 
         VALUE Date = rb_const_get(rb_cObject, rb_intern("Date"));
-        rval = rb_funcall(Date, rb_intern("new"), 3, year, month, day);
+        rval = rb_funcall(Date, rb_intern("new"), 3, UINT2NUM(year), UINT2NUM(month), UINT2NUM(day));
       } break;
 
       case mysql::system::MYSQL_TYPE_TIME: {
