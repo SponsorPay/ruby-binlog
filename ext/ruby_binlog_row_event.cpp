@@ -39,7 +39,7 @@ void RowEvent::set_event(VALUE self, mysql::Binary_log_event *event, VALUE table
 
   Data_Get_Struct(self, RowEvent, p);
   p->m_event = static_cast<Row_event*>(event);
-  p->m_table_map = table_map;
+  p->m_table_map = rb_hash_aref(table_map, ULL2NUM(p->m_event->table_id));
   p->m_event_header = event->header();
 }
 
@@ -233,28 +233,28 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         break;
 
       case mysql::system::MYSQL_TYPE_TINY:
-        rval = INT2NUM(itor->as_int8());
+        rval = UINT2NUM(itor->as_int8());
         break;
 
       case mysql::system::MYSQL_TYPE_SHORT:
-        rval = INT2NUM(itor->as_int16());
+        rval = UINT2NUM(itor->as_int16());
         break;
 
       case mysql::system::MYSQL_TYPE_INT24: {
         const unsigned char* buf = (const unsigned char*) itor->storage();
-        if (buf[2] & 0x80) {
-          rval = INT2NUM((0xff << 24) | (buf[2] << 16) | (buf[1] << 8) | (buf[0] << 0));
-        } else {
-          rval = INT2NUM((buf[2] << 16) | (buf[1] << 8) | (buf[0] << 0));
-        }
+//      if (buf[2] & 0x80) {
+//        rval = INT2NUM((0xff << 24) | (buf[2] << 16) | (buf[1] << 8) | (buf[0] << 0));
+//      } else {
+          rval = UINT2NUM((buf[2] << 16) | (buf[1] << 8) | (buf[0] << 0));
+//      }
       } break;
 
       case mysql::system::MYSQL_TYPE_LONG:
-        rval = INT2NUM(itor->as_int32());
+        rval = UINT2NUM(itor->as_int32());
         break;
 
       case mysql::system::MYSQL_TYPE_LONGLONG:
-        rval = INT2NUM(itor->as_int64());
+        rval = ULL2NUM(itor->as_int64());
         break;
 
       case mysql::system::MYSQL_TYPE_BIT: {
@@ -325,6 +325,7 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
             INT2FIX(t / 10000), INT2FIX((t % 10000) / 100), INT2FIX(t % 100));
       } break;
 
+      case mysql::system::MYSQL_TYPE_STRING:
       case mysql::system::MYSQL_TYPE_VARCHAR: {
         unsigned long size;
         char *ptr = itor->as_c_str(size);

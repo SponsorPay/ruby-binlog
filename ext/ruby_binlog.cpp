@@ -49,6 +49,7 @@ struct Client {
     Data_Get_Struct(self, Client, p);
     p->m_binlog = new mysql::Binary_log(
       mysql::system::create_transport(StringValuePtr(uri)));
+    p->m_table_map = rb_hash_new();
 
     return Qnil;
   }
@@ -243,7 +244,7 @@ struct Client {
     case TABLE_MAP_EVENT:
       retval = rb_funcall(rb_cBinlogTableMapEvent, rb_intern("new"), 0);
       TableMapEvent::set_event(retval, event);
-      p->m_table_map = retval;
+      rb_hash_aset(p->m_table_map, rb_funcall(retval, rb_intern("table_id"), 0), retval);
       break;
 
     // XXX: Is it right?
