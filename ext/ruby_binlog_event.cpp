@@ -48,8 +48,8 @@ VALUE Event::get_flags(VALUE self) {
 VALUE Event::get_event_type(VALUE self) {
   Event *p;
   Data_Get_Struct(self, Event, p);
-  return rb_str_new2(
-    mysql::system::get_event_type_str(static_cast<enum Log_event_type>(p->m_event_header->type_code)));
+  return ID2SYM(rb_intern(
+    mysql::system::get_event_type_str(static_cast<enum Log_event_type>(p->m_event_header->type_code))));
 }
 
 void Event::init(VALUE clazz) {
