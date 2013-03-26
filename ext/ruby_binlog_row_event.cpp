@@ -237,7 +237,7 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         break;
 
       case mysql::system::MYSQL_TYPE_SHORT:
-        rval = UINT2NUM(itor->as_int16());
+        rval = UINT2NUM((boost::uint16_t)(itor->as_int16()));
         break;
 
       case mysql::system::MYSQL_TYPE_INT24: {
@@ -250,11 +250,11 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
       } break;
 
       case mysql::system::MYSQL_TYPE_LONG:
-        rval = UINT2NUM(itor->as_int32());
+        rval = INT2NUM(itor->as_int32());
         break;
 
       case mysql::system::MYSQL_TYPE_LONGLONG:
-        rval = ULL2NUM(itor->as_int64());
+        rval = LL2NUM(itor->as_int64());
         break;
 
       case mysql::system::MYSQL_TYPE_BIT: {
