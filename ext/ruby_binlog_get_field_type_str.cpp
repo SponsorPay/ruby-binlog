@@ -18,6 +18,7 @@ const char* get_field_type_str(mysql::system::enum_field_types type) {
   case mysql::system::MYSQL_TYPE_DATE:        return "DATE";        break;
   case mysql::system::MYSQL_TYPE_TIME:        return "TIME";        break;
   case mysql::system::MYSQL_TYPE_DATETIME:    return "DATETIME";    break;
+  case mysql::system::MYSQL_TYPE_DATETIME2:   return "DATETIME";    break;
   case mysql::system::MYSQL_TYPE_YEAR:        return "YEAR";        break;
   case mysql::system::MYSQL_TYPE_NEWDATE:     return "NEWDATE";     break;
   case mysql::system::MYSQL_TYPE_VARCHAR:     return "VARCHAR";     break;
