@@ -12,24 +12,6 @@ typedef boost::uint32_t uint32;
 
 #define DIG_PER_DEC1    9
 
-#define mi_sint1korr(A) ((int8)(*A))
-
-#define mi_sint2korr(A) ((int16)    (((int16) (((uint8*) (A))[1])) + ((int16) ((int16) ((char*) (A))[0]) << 8)))
-
-#define mi_sint3korr(A) ((int32)    (((((uint8*) (A))[0]) & 128) ?          \
-                                    (((uint32) 255L << 24) |                \
-                                    (((uint32) ((uint8*) (A))[0]) << 16) |  \
-                                    (((uint32) ((uint8*) (A))[1]) << 8) |   \
-                                    ((uint32) ((uint8*) (A))[2])) :         \
-                                    (((uint32) ((uint8*) (A))[0]) << 16) |  \
-                                    (((uint32) ((uint8*) (A))[1]) << 8) |   \
-                                    ((uint32) ((uint8*) (A))[2])))
-
-#define mi_sint4korr(A) ((int32)    (((int32) (((uint8*) (A))[3])) +        \
-                                    ((int32) (((uint8*) (A))[2]) << 8) +    \
-                                    ((int32) (((uint8*) (A))[1]) << 16) +   \
-                                    ((int32) ((int16) ((char*) (A))[0]) << 24)))
-
 typedef int32 decimal_digit_t;
 typedef decimal_digit_t dec1;
 

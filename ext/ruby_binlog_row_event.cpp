@@ -324,6 +324,60 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
             INT2FIX(d / 10000), INT2FIX((d % 10000) / 100), INT2FIX(d % 100),
             INT2FIX(t / 10000), INT2FIX((t % 10000) / 100), INT2FIX(t % 100));
       } break;
+      case mysql::system::MYSQL_TYPE_DATETIME2: {
+        boost::uint64_t timestamp;
+        boost::uint64_t intpart= mi_uint5korr(itor->storage()) - DATETIMEF_INT_OFS;
+
+        int frac;
+
+        switch (itor->metadata())
+        {
+        case 0:
+        default:
+	  timestamp = MY_PACKED_TIME_MAKE_INT(intpart);
+          break;
+        case 1:
+        case 2:
+          frac= ((int) (signed char) itor->storage()[5]) * 10000;
+	  timestamp = MY_PACKED_TIME_MAKE(intpart, frac);
+          break;
+        case 3:
+        case 4:
+          frac= mi_sint2korr(itor->storage() + 5) * 100;
+	  timestamp = MY_PACKED_TIME_MAKE(intpart, frac);
+          break;
+        case 5:
+        case 6:
+          frac= mi_sint3korr(itor->storage() + 5);
+	  timestamp = MY_PACKED_TIME_MAKE(intpart, frac);
+          break;
+        }
+
+        unsigned long ymd, hms;
+        unsigned long ymdhms, ym;
+        if (timestamp < 0)
+          timestamp= -timestamp;
+
+        unsigned long second_part = ((timestamp) % (1LL << 24));
+        ymdhms= ((timestamp) >> 24);
+
+        ymd= ymdhms >> 17;
+        ym= ymd >> 5;
+        hms= ymdhms % (1 << 17);
+
+        int day = ymd % (1 << 5);
+        int month = ym % 13;
+        int year = ym / 13;
+
+        int hours = hms >> 12;
+        int minutes = (hms >> 6) % (1 << 6);
+        int seconds = hms % (1 << 6);
+
+        VALUE DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
+        rval = rb_funcall(DateTime, rb_intern("new"), 6,
+            INT2FIX(year), INT2FIX(month), INT2FIX(day),
+            INT2FIX(hours), INT2FIX(minutes), INT2FIX(seconds));
+      } break;
 
       case mysql::system::MYSQL_TYPE_STRING:
       case mysql::system::MYSQL_TYPE_VARCHAR: {
