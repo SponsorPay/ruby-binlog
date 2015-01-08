@@ -1,4 +1,5 @@
 #include "ruby_binlog.h"
+#include <boost/lexical_cast.hpp>
 
 VALUE rb_cBinlogRowEvent;
 
@@ -316,13 +317,10 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
 
       case mysql::system::MYSQL_TYPE_DATETIME: {
         boost::uint64_t timestamp = itor->as_int64();
-        unsigned long d = timestamp / 1000000;
-        unsigned long t = timestamp % 1000000;
+        
+        std::string d = boost::lexical_cast<std::string>(timestamp);
 
-        VALUE DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
-        rval = rb_funcall(DateTime, rb_intern("new"), 6,
-            INT2FIX(d / 10000), INT2FIX((d % 10000) / 100), INT2FIX(d % 100),
-            INT2FIX(t / 10000), INT2FIX((t % 10000) / 100), INT2FIX(t % 100));
+        rval = rb_str_new(d.c_str(), d.length());
       } break;
       case mysql::system::MYSQL_TYPE_DATETIME2: {
         boost::uint64_t timestamp;
