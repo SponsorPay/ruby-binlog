@@ -317,10 +317,19 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
 
       case mysql::system::MYSQL_TYPE_DATETIME: {
         boost::uint64_t timestamp = itor->as_int64();
-        
-        std::string d = boost::lexical_cast<std::string>(timestamp);
 
-        rval = rb_str_new(d.c_str(), d.length());
+        std::string date = "0000-00-00 00:00:00";
+
+        if(timestamp > 0) {
+          date = boost::lexical_cast<std::string>(timestamp);
+          date.insert(4, "-");
+          date.insert(7, "-");
+          date.insert(10, " ");
+          date.insert(13, ":");
+          date.insert(16, ":");
+        }
+
+        rval = rb_str_new(date.c_str(), date.length());
       } break;
       case mysql::system::MYSQL_TYPE_DATETIME2: {
         boost::uint64_t timestamp;
