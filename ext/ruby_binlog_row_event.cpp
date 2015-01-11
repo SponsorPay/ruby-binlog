@@ -1,5 +1,7 @@
 #include "ruby_binlog.h"
 #include <boost/lexical_cast.hpp>
+#include <iomanip>
+#include <sstream>
 
 VALUE rb_cBinlogRowEvent;
 
@@ -318,16 +320,22 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
       case mysql::system::MYSQL_TYPE_DATETIME: {
         boost::uint64_t timestamp = itor->as_int64();
 
-        std::string date = "0000-00-00 00:00:00";
+        std::stringstream datestream;
+        datestream << std::setfill('0') << std::setw(14) << boost::lexical_cast<std::string>(timestamp);
+        std::string date;
+        datestream >> date;
+        std::cerr << "before: " + date;
+        std::cerr << "\n";
 
-        if(timestamp > 0) {
-          date = boost::lexical_cast<std::string>(timestamp);
-          date.insert(4, "-");
-          date.insert(7, "-");
-          date.insert(10, " ");
-          date.insert(13, ":");
-          date.insert(16, ":");
-        }
+        // Format date
+        date.insert(4, "-");
+        date.insert(7, "-");
+        date.insert(10, " ");
+        date.insert(13, ":");
+        date.insert(16, ":");
+
+        std::cerr << "after: " + date;
+        std::cerr << "\n";
 
         rval = rb_str_new(date.c_str(), date.length());
       } break;
