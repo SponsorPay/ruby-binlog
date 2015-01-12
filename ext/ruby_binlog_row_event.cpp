@@ -295,8 +295,8 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         unsigned int month = date >> 5;
         unsigned int day = date - (month << 5);
 
-        VALUE Date = rb_const_get(rb_cObject, rb_intern("Date"));
-        rval = rb_funcall(Date, rb_intern("new"), 3, UINT2NUM(year), UINT2NUM(month), UINT2NUM(day));
+        std::string full_date = boost::to_string(year) + "-" + boost::to_string(month) + "-" + boost::to_string(day);
+        rval = rb_str_new(full_date.c_str(), full_date.length());
       } break;
 
       case mysql::system::MYSQL_TYPE_TIME: {
@@ -307,8 +307,8 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         unsigned int min = (time % 10000) / 100;
         unsigned int hour = (time - min) / 10000;
 
-        VALUE Time = rb_const_get(rb_cObject, rb_intern("Time"));
-        rval = rb_funcall(Time, rb_intern("utc"), 6, 2000, 1, 1, UINT2NUM(hour), UINT2NUM(min), UINT2NUM(sec));
+        std::string full_time = boost::to_string(hour) + ":" + boost::to_string(min) + ":" + boost::to_string(sec);
+        rval = rb_str_new(full_time.c_str(), full_time.length());
       } break;
 
       case mysql::system::MYSQL_TYPE_YEAR: {
