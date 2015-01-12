@@ -324,8 +324,6 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         datestream << std::setfill('0') << std::setw(14) << boost::lexical_cast<std::string>(timestamp);
         std::string date;
         datestream >> date;
-        std::cerr << "before: " + date;
-        std::cerr << "\n";
 
         // Format date
         date.insert(4, "-");
@@ -333,9 +331,6 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         date.insert(10, " ");
         date.insert(13, ":");
         date.insert(16, ":");
-
-        std::cerr << "after: " + date;
-        std::cerr << "\n";
 
         rval = rb_str_new(date.c_str(), date.length());
       } break;
