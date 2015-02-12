@@ -1,5 +1,11 @@
 #include "ruby_binlog.h"
 
+/* Ruby 2.0+ */
+#include <ruby/thread.h>
+typedef void* (*nogvlf)(void*);
+
+#define WITHOUT_GVL(fn,a,ubf,b) rb_thread_call_without_gvl((reinterpret_cast<nogvlf>(fn)),(a),(ubf),(b))
+
 extern VALUE rb_cBinlogQueryEvent;
 extern VALUE rb_cBinlogRotateEvent;
 extern VALUE rb_cBinlogFormatEvent;
@@ -115,7 +121,7 @@ struct Client {
     int result;
 
     Data_Get_Struct(self, Client, p);
-    result = rb_thread_blocking_region(binlog_connect, p->m_binlog, RUBY_UBF_IO, 0);
+    result = (VALUE)WITHOUT_GVL(binlog_connect, p->m_binlog, RUBY_UBF_IO, 0);
 
     return (result == 0) ? Qtrue : Qfalse;
   }
@@ -168,7 +174,7 @@ struct Client {
     if (driver->m_socket) {
       bool open;
 
-      open = rb_thread_blocking_region(socket_is_open, driver->m_socket, RUBY_UBF_IO, 0);
+      open = (bool)WITHOUT_GVL(socket_is_open, driver->m_socket, RUBY_UBF_IO, 0);
 
       return open ? Qfalse : Qtrue;
     } else {
@@ -191,16 +197,16 @@ struct Client {
       timeval interval = { 0, WAIT_INTERVAL };
 
       while (1) {
-        if (rb_thread_blocking_region(driver_queue_is_not_empty, driver, RUBY_UBF_IO, 0)) {
+        if ((bool)WITHOUT_GVL(driver_queue_is_not_empty, driver, RUBY_UBF_IO, 0)) {
           Binlog_and_Event params = {p->m_binlog, &event};
-          result = rb_thread_blocking_region(binlog_wait_for_next_event, &params, RUBY_UBF_IO, 0);
+          result = (VALUE)WITHOUT_GVL(binlog_wait_for_next_event, &params, RUBY_UBF_IO, 0);
           break;
         } else {
-          if (driver->m_socket && rb_thread_blocking_region(socket_is_open, driver->m_socket, RUBY_UBF_IO, 0)) {
+          if (driver->m_socket && (bool)WITHOUT_GVL(socket_is_open, driver->m_socket, RUBY_UBF_IO, 0)) {
             rb_thread_wait_for(interval);
           } else {
             closed = 1;
-            rb_thread_blocking_region(driver_shutdown, driver, RUBY_UBF_IO, 0);
+            WITHOUT_GVL(driver_shutdown, driver, RUBY_UBF_IO, 0);
             rb_thread_wait_for(interval);
             break;
           }
@@ -208,12 +214,12 @@ struct Client {
       }
 
       if (closed) {
-        rb_thread_blocking_region(driver_disconnect, driver, RUBY_UBF_IO, 0);
+        WITHOUT_GVL(driver_disconnect, driver, RUBY_UBF_IO, 0);
         rb_raise(rb_eBinlogError, "MySQL server has gone away");
       }
     } else {
       Binlog_and_Event params = {p->m_binlog, &event};
-      result = rb_thread_blocking_region(binlog_wait_for_next_event, &params, RUBY_UBF_IO, 0);
+      result = (VALUE)WITHOUT_GVL(binlog_wait_for_next_event, &params, RUBY_UBF_IO, 0);
     }
 
     if (result == ERR_EOF) {
@@ -251,7 +257,7 @@ struct Client {
     //case PRE_GA_WRITE_ROWS_EVENT:
     //case PRE_GA_UPDATE_ROWS_EVENT:
     //case PRE_GA_DELETE_ROWS_EVENT:
-    case WRITE_ROWS_EVENT: 
+    case WRITE_ROWS_EVENT:
     case UPDATE_ROWS_EVENT:
     case DELETE_ROWS_EVENT:
       retval = rb_funcall(rb_cBinlogRowEvent, rb_intern("new"), 0);
@@ -294,14 +300,14 @@ struct Client {
       unsigned long i_position;
       i_position = NUM2ULONG(filename);
       Filename_and_Position params = {p->m_binlog, 0, i_position};
-      result = rb_thread_blocking_region(binlog_set_position, &params, RUBY_UBF_IO, 0);
+      result = (VALUE)WITHOUT_GVL(binlog_set_position, &params, RUBY_UBF_IO, 0);
     } else {
       unsigned long i_position;
       Check_Type(filename, T_STRING);
       i_position = NUM2ULONG(position);
       std::string s_filename(StringValuePtr(filename));
       Filename_and_Position params = {p->m_binlog, &s_filename, i_position};
-      result = rb_thread_blocking_region(binlog_set_position, &params, RUBY_UBF_IO, 0);
+      result = (VALUE)WITHOUT_GVL(binlog_set_position, &params, RUBY_UBF_IO, 0);
     }
 
     switch (result) {
@@ -325,7 +331,7 @@ struct Client {
 
     Data_Get_Struct(self, Client, p);
     Filename_and_Position params = {p->m_binlog, 0, NUM2ULONG(position)};
-    result = rb_thread_blocking_region(binlog_set_position, &params, RUBY_UBF_IO, 0);
+    result = (VALUE)WITHOUT_GVL(binlog_set_position, &params, RUBY_UBF_IO, 0);
 
     switch (result) {
     case ERR_OK:
@@ -355,7 +361,7 @@ struct Client {
       Check_Type(filename, T_STRING);
       std::string s_filename(StringValuePtr(filename));
       Filename_and_Position params = {p->m_binlog, &s_filename, 0};
-      position = rb_thread_blocking_region(binlog_get_position, &params, RUBY_UBF_IO, 0);
+      position = (unsigned long)WITHOUT_GVL(binlog_get_position, &params, RUBY_UBF_IO, 0);
     }
 
     return ULONG2NUM(position);
@@ -367,7 +373,7 @@ struct Client {
     unsigned long position;
 
     Filename_and_Position params = {p->m_binlog, 0, 0};
-    position = rb_thread_blocking_region(binlog_get_position, &params, RUBY_UBF_IO, 0);
+    position = (unsigned long)WITHOUT_GVL(binlog_get_position, &params, RUBY_UBF_IO, 0);
 
     return ULONG2NUM(position);
   }
@@ -399,7 +405,7 @@ VALUE rb_eBinlogError;
 void Init_binlog() {
   rb_funcall(rb_cObject, rb_intern("require"), 1, rb_str_new2("date"));
   rb_funcall(rb_cObject, rb_intern("require"), 1, rb_str_new2("bigdecimal"));
-              
+
   rb_mBinlog = rb_define_module("Binlog");
   rb_cBinlogEvent = rb_define_class_under(rb_mBinlog, "Event", rb_cObject);
   rb_eBinlogError = rb_define_class_under(rb_mBinlog, "Error", rb_eRuntimeError);
