@@ -361,7 +361,7 @@ struct Client {
       Check_Type(filename, T_STRING);
       std::string s_filename(StringValuePtr(filename));
       Filename_and_Position params = {p->m_binlog, &s_filename, 0};
-      position = (unsigned long)WITHOUT_GVL(binlog_get_position, &params, RUBY_UBF_IO, 0);
+      position = (VALUE)WITHOUT_GVL(binlog_get_position, &params, RUBY_UBF_IO, 0);
     }
 
     return ULONG2NUM(position);
@@ -373,7 +373,7 @@ struct Client {
     unsigned long position;
 
     Filename_and_Position params = {p->m_binlog, 0, 0};
-    position = (unsigned long)WITHOUT_GVL(binlog_get_position, &params, RUBY_UBF_IO, 0);
+    position = (VALUE)WITHOUT_GVL(binlog_get_position, &params, RUBY_UBF_IO, 0);
 
     return ULONG2NUM(position);
   }
