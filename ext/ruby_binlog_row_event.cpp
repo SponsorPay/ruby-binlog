@@ -1,4 +1,7 @@
 #include "ruby_binlog.h"
+#include <boost/lexical_cast.hpp>
+#include <iomanip>
+#include <sstream>
 
 VALUE rb_cBinlogRowEvent;
 
@@ -292,8 +295,8 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         unsigned int month = date >> 5;
         unsigned int day = date - (month << 5);
 
-        VALUE Date = rb_const_get(rb_cObject, rb_intern("Date"));
-        rval = rb_funcall(Date, rb_intern("new"), 3, UINT2NUM(year), UINT2NUM(month), UINT2NUM(day));
+        std::string full_date = boost::to_string(year) + "-" + boost::to_string(month) + "-" + boost::to_string(day);
+        rval = rb_str_new(full_date.c_str(), full_date.length());
       } break;
 
       case mysql::system::MYSQL_TYPE_TIME: {
@@ -304,8 +307,8 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
         unsigned int min = (time % 10000) / 100;
         unsigned int hour = (time - min) / 10000;
 
-        VALUE Time = rb_const_get(rb_cObject, rb_intern("Time"));
-        rval = rb_funcall(Time, rb_intern("utc"), 6, 2000, 1, 1, UINT2NUM(hour), UINT2NUM(min), UINT2NUM(sec));
+        std::string full_time = boost::to_string(hour) + ":" + boost::to_string(min) + ":" + boost::to_string(sec);
+        rval = rb_str_new(full_time.c_str(), full_time.length());
       } break;
 
       case mysql::system::MYSQL_TYPE_YEAR: {
@@ -316,13 +319,20 @@ void RowEvent::proc0(mysql::Row_of_fields &fields, VALUE rb_fields) {
 
       case mysql::system::MYSQL_TYPE_DATETIME: {
         boost::uint64_t timestamp = itor->as_int64();
-        unsigned long d = timestamp / 1000000;
-        unsigned long t = timestamp % 1000000;
 
-        VALUE DateTime = rb_const_get(rb_cObject, rb_intern("DateTime"));
-        rval = rb_funcall(DateTime, rb_intern("new"), 6,
-            INT2FIX(d / 10000), INT2FIX((d % 10000) / 100), INT2FIX(d % 100),
-            INT2FIX(t / 10000), INT2FIX((t % 10000) / 100), INT2FIX(t % 100));
+        std::stringstream datestream;
+        datestream << std::setfill('0') << std::setw(14) << boost::lexical_cast<std::string>(timestamp);
+        std::string date;
+        datestream >> date;
+
+        // Format date
+        date.insert(4, "-");
+        date.insert(7, "-");
+        date.insert(10, " ");
+        date.insert(13, ":");
+        date.insert(16, ":");
+
+        rval = rb_str_new(date.c_str(), date.length());
       } break;
       case mysql::system::MYSQL_TYPE_DATETIME2: {
         boost::uint64_t timestamp;
