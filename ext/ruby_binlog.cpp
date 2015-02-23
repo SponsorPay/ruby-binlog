@@ -20,14 +20,50 @@ extern VALUE rb_cBinlogUnimplementedEvent;
 namespace ruby {
 namespace binlog {
 
+struct DbFilter : mysql::Content_handler {
+  DbFilter(const std::vector<std::string> &dbs)
+  : mysql::Content_handler()
+  , accepted_dbs(dbs) {
+    std::sort(accepted_dbs.begin(), accepted_dbs.end());
+  }
+
+#define FILTER_EVENT(ev)                                                       \
+  do {                                                                         \
+    if (std::binary_search(accepted_dbs.begin(), accepted_dbs.end(),           \
+                           ev->db_name)) {                                     \
+      return ev;                                                               \
+    }                                                                          \
+    delete ev;                                                                 \
+    return NULL;                                                               \
+  } while (0)
+
+  mysql::Binary_log_event *process_event(mysql::Query_event *ev) {
+    FILTER_EVENT(ev);
+  }
+
+  mysql::Binary_log_event *process_event(mysql::Table_map_event *ev) {
+    FILTER_EVENT(ev);
+  }
+
+#undef FILTER_EVENT
+
+  std::vector<std::string> accepted_dbs;
+};
+
 struct Client {
   Binary_log *m_binlog;
+  DbFilter *filter;
   VALUE m_table_map;
 
   static void free(Client *p) {
     if (p->m_binlog) {
       delete p->m_binlog;
       p->m_binlog = 0;
+    }
+
+    if (p->filter) {
+      delete p->filter;
+      p->filter = 0;
     }
 
     p->m_table_map = 0;
@@ -45,16 +81,43 @@ struct Client {
     Client *p = new Client();
     p->m_binlog = 0;
     p->m_table_map = 0;
+    p->filter = 0;
     return Data_Wrap_Struct(klass, &mark, &free, p);
   }
 
-  static VALUE initialize(VALUE self, VALUE uri) {
+  static VALUE initialize(int argc, VALUE* argv, VALUE self) {
     Client *p;
 
+    VALUE uri, dbs;
+    rb_scan_args(argc, argv, "11", &uri, &dbs);
+
     Check_Type(uri, T_STRING);
+
+    DbFilter *filter = NULL;
+    if (!NIL_P(dbs)) {
+      Check_Type(dbs, T_ARRAY);
+
+      std::vector<std::string> accepted_dbs;
+      size_t nb_db = RARRAY_LEN(dbs);
+      for (size_t i = 0; i < nb_db; ++i) {
+        VALUE e = rb_ary_entry(dbs, i);
+        Check_Type(e, T_STRING);
+        accepted_dbs.push_back(StringValuePtr(e));
+      }
+      if (!accepted_dbs.empty()) {
+        filter = new DbFilter(accepted_dbs);
+      }
+    }
+
     Data_Get_Struct(self, Client, p);
     p->m_binlog = new mysql::Binary_log(
       mysql::system::create_transport(StringValuePtr(uri)));
+
+    if (filter) {
+      p->m_binlog->content_handler_pipeline()->push_back(filter);
+      p->filter = filter;
+    }
+
     p->m_table_map = rb_hash_new();
 
     return Qnil;
@@ -381,7 +444,7 @@ struct Client {
   static void init() {
     VALUE rb_cBinlogClient = rb_define_class_under(rb_mBinlog, "Client", rb_cObject);
     rb_define_alloc_func(rb_cBinlogClient, &alloc);
-    rb_define_private_method(rb_cBinlogClient, "initialize", __F(&initialize), 1);
+    rb_define_private_method(rb_cBinlogClient, "initialize", __F(&initialize), -1);
     rb_define_method(rb_cBinlogClient, "connect", __F(&connect), 0);
     // XXX: Don't use
     //rb_define_method(rb_cBinlogClient, "disconnect", __F(&disconnect), 0);
