@@ -23,9 +23,9 @@ std::string decimal2str(const mysql::Value& val) {
   int scale = val.metadata() >> 8;
 
   int intg   = precision-scale,
-      intg0  = intg / DIG_PER_DEC1, 
+      intg0  = intg / DIG_PER_DEC1,
       frac0  = scale / DIG_PER_DEC1,
-      intg0x = intg - intg0 * DIG_PER_DEC1, 
+      intg0x = intg - intg0 * DIG_PER_DEC1,
       frac0x = scale - frac0 * DIG_PER_DEC1;
 
   dec1 mask = (*from & 0x80) ? 0 : -1;
@@ -77,7 +77,7 @@ std::string decimal2str(const mysql::Value& val) {
       case 3: x=mi_sint3korr(from); break;
       case 4: x=mi_sint4korr(from); break;
     }
-    
+
     out << std::setw(frac0x) << (x ^ mask);
   }
   free(d_copy);
