@@ -1,5 +1,8 @@
 #include "ruby_binlog.h"
 
+#include <set>
+#include <vector>
+
 /* Ruby 2.0+ */
 #include <ruby/thread.h>
 typedef void* (*nogvlf)(void*);
@@ -29,25 +32,39 @@ struct DbFilter : mysql::Content_handler {
 
 #define FILTER_EVENT(ev)                                                       \
   do {                                                                         \
-    if (std::binary_search(accepted_dbs.begin(), accepted_dbs.end(),           \
-                           ev->db_name)) {                                     \
-      return ev;                                                               \
+    if (!std::binary_search(accepted_dbs.begin(), accepted_dbs.end(),          \
+                            ev->db_name)) {                                    \
+      delete ev;                                                               \
+      return NULL;                                                             \
     }                                                                          \
-    delete ev;                                                                 \
-    return NULL;                                                               \
   } while (0)
 
   mysql::Binary_log_event *process_event(mysql::Query_event *ev) {
     FILTER_EVENT(ev);
+
+    return ev;
   }
 
   mysql::Binary_log_event *process_event(mysql::Table_map_event *ev) {
     FILTER_EVENT(ev);
+
+    known_tables.insert(ev->table_id);
+    return ev;
+  }
+
+  mysql::Binary_log_event *process_event(mysql::Row_event *ev) {
+    if (!known_tables.count(ev->table_id)) {
+      delete ev;
+      return NULL;
+    }
+
+    return ev;
   }
 
 #undef FILTER_EVENT
 
   std::vector<std::string> accepted_dbs;
+  std::set<uint64_t> known_tables;
 };
 
 struct Client {
