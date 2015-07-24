@@ -206,8 +206,6 @@ struct Client {
     return (result == 0) ? Qtrue : Qfalse;
   }
 
-  // XXX: Don't use
-  /*
   static VALUE disconnect(VALUE self) {
     Client *p;
     mysql::system::Binlog_tcp_driver *driver;
@@ -221,10 +219,7 @@ struct Client {
 
     return Qnil;
   }
-   */
 
-  // XXX: Don't use
-  /*
   static VALUE reconnect(VALUE self) {
     Client *p;
     mysql::system::Binlog_tcp_driver *driver;
@@ -238,7 +233,7 @@ struct Client {
 
     return Qnil;
   }
-   */
+
 
   static VALUE is_closed(VALUE self) {
     Client *p;
@@ -463,9 +458,8 @@ struct Client {
     rb_define_alloc_func(rb_cBinlogClient, &alloc);
     rb_define_private_method(rb_cBinlogClient, "initialize", __F(&initialize), -1);
     rb_define_method(rb_cBinlogClient, "connect", __F(&connect), 0);
-    // XXX: Don't use
-    //rb_define_method(rb_cBinlogClient, "disconnect", __F(&disconnect), 0);
-    //rb_define_method(rb_cBinlogClient, "reconnect", __F(&reconnect), 0);
+    rb_define_method(rb_cBinlogClient, "disconnect", __F(&disconnect), 0);
+    rb_define_method(rb_cBinlogClient, "reconnect", __F(&reconnect), 0);
     rb_define_method(rb_cBinlogClient, "closed?", __F(&is_closed), 0);
     rb_define_method(rb_cBinlogClient, "wait_for_next_event", __F(&wait_for_next_event), 0);
     rb_define_method(rb_cBinlogClient, "set_position", __F(&set_position), -1);
