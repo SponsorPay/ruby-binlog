@@ -1,5 +1,8 @@
 #include "ruby_binlog.h"
 
+#include <set>
+#include <vector>
+
 /* Ruby 2.0+ */
 #include <ruby/thread.h>
 typedef void* (*nogvlf)(void*);
@@ -29,25 +32,39 @@ struct DbFilter : mysql::Content_handler {
 
 #define FILTER_EVENT(ev)                                                       \
   do {                                                                         \
-    if (std::binary_search(accepted_dbs.begin(), accepted_dbs.end(),           \
-                           ev->db_name)) {                                     \
-      return ev;                                                               \
+    if (!std::binary_search(accepted_dbs.begin(), accepted_dbs.end(),          \
+                            ev->db_name)) {                                    \
+      delete ev;                                                               \
+      return NULL;                                                             \
     }                                                                          \
-    delete ev;                                                                 \
-    return NULL;                                                               \
   } while (0)
 
   mysql::Binary_log_event *process_event(mysql::Query_event *ev) {
     FILTER_EVENT(ev);
+
+    return ev;
   }
 
   mysql::Binary_log_event *process_event(mysql::Table_map_event *ev) {
     FILTER_EVENT(ev);
+
+    known_tables.insert(ev->table_id);
+    return ev;
+  }
+
+  mysql::Binary_log_event *process_event(mysql::Row_event *ev) {
+    if (!known_tables.count(ev->table_id)) {
+      delete ev;
+      return NULL;
+    }
+
+    return ev;
   }
 
 #undef FILTER_EVENT
 
   std::vector<std::string> accepted_dbs;
+  std::set<uint64_t> known_tables;
 };
 
 struct Client {
@@ -189,8 +206,6 @@ struct Client {
     return (result == 0) ? Qtrue : Qfalse;
   }
 
-  // XXX: Don't use
-  /*
   static VALUE disconnect(VALUE self) {
     Client *p;
     mysql::system::Binlog_tcp_driver *driver;
@@ -204,10 +219,7 @@ struct Client {
 
     return Qnil;
   }
-   */
 
-  // XXX: Don't use
-  /*
   static VALUE reconnect(VALUE self) {
     Client *p;
     mysql::system::Binlog_tcp_driver *driver;
@@ -221,7 +233,7 @@ struct Client {
 
     return Qnil;
   }
-   */
+
 
   static VALUE is_closed(VALUE self) {
     Client *p;
@@ -446,9 +458,8 @@ struct Client {
     rb_define_alloc_func(rb_cBinlogClient, &alloc);
     rb_define_private_method(rb_cBinlogClient, "initialize", __F(&initialize), -1);
     rb_define_method(rb_cBinlogClient, "connect", __F(&connect), 0);
-    // XXX: Don't use
-    //rb_define_method(rb_cBinlogClient, "disconnect", __F(&disconnect), 0);
-    //rb_define_method(rb_cBinlogClient, "reconnect", __F(&reconnect), 0);
+    rb_define_method(rb_cBinlogClient, "disconnect", __F(&disconnect), 0);
+    rb_define_method(rb_cBinlogClient, "reconnect", __F(&reconnect), 0);
     rb_define_method(rb_cBinlogClient, "closed?", __F(&is_closed), 0);
     rb_define_method(rb_cBinlogClient, "wait_for_next_event", __F(&wait_for_next_event), 0);
     rb_define_method(rb_cBinlogClient, "set_position", __F(&set_position), -1);
